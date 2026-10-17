@@ -304,4 +304,70 @@ object FoundITIcons {
             }
         }.build()
     }
+
+    val Google: ImageVector by lazy {
+        ImageVector.Builder(
+            name = "Google",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f
+        ).apply {
+            path(fill = SolidColor(Color.White)) {
+                moveTo(21.35f, 11.1f)
+                horizontalLineTo(12f)
+                verticalLineTo(14.8f)
+                horizontalLineTo(17.39f)
+                curveTo(16.63f, 16.89f, 14.59f, 18.4f, 12f, 18.4f)
+                curveTo(8.46f, 18.4f, 5.6f, 15.54f, 5.6f, 12f)
+                curveTo(5.6f, 8.46f, 8.46f, 5.6f, 12f, 5.6f)
+                curveTo(13.62f, 5.6f, 15.09f, 6.19f, 16.23f, 7.16f)
+                lineTo(19.06f, 4.33f)
+                curveTo(17.21f, 2.61f, 14.77f, 1.6f, 12f, 1.6f)
+                curveTo(6.26f, 1.6f, 1.6f, 6.26f, 1.6f, 12f)
+                curveTo(1.6f, 17.74f, 6.26f, 22.4f, 12f, 22.4f)
+                curveTo(17.74f, 22.4f, 22.18f, 18.31f, 22.18f, 12.28f)
+                curveTo(22.18f, 11.75f, 22.11f, 11.42f, 21.99f, 11.1f)
+                horizontalLineTo(21.35f)
+                close()
+            }
+        }.build()
+    }
+
+    val SignOut: ImageVector by lazy {
+        ImageVector.Builder(
+            name = "SignOut",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f
+        ).apply {
+            path(fill = SolidColor(Color.White)) {
+                moveTo(17f, 7f)
+                lineTo(15.59f, 8.41f)
+                lineTo(17.17f, 10f)
+                horizontalLineTo(9f)
+                verticalLineTo(12f)
+                horizontalLineTo(17.17f)
+                lineTo(15.59f, 13.59f)
+                lineTo(17f, 15f)
+                lineTo(21f, 11f)
+                lineTo(17f, 7f)
+                close()
+                moveTo(4f, 5f)
+                horizontalLineTo(12f)
+                verticalLineTo(3f)
+                horizontalLineTo(4f)
+                curveTo(2.9f, 3f, 2f, 3.9f, 2f, 5f)
+                verticalLineTo(19f)
+                curveTo(2f, 20.1f, 2.9f, 21f, 4f, 21f)
+                horizontalLineTo(12f)
+                verticalLineTo(19f)
+                horizontalLineTo(4f)
+                verticalLineTo(5f)
+                close()
+            }
+        }.build()
+    }
 }
+

@@ -13,18 +13,22 @@ import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.shashidhara.foundit.data.repository.AuthState
 import com.shashidhara.foundit.ui.components.FoundITSidebar
 import com.shashidhara.foundit.ui.components.FoundITTopBar
 import com.shashidhara.foundit.ui.navigation.Screen
 import com.shashidhara.foundit.ui.screens.AccountScreen
 import com.shashidhara.foundit.ui.screens.HomeScreen
 import com.shashidhara.foundit.ui.theme.CyberTealDarkest
+import com.shashidhara.foundit.ui.viewmodel.AuthViewModel
 import kotlinx.coroutines.launch
 
 /**
@@ -33,10 +37,15 @@ import kotlinx.coroutines.launch
  * Sidebar opens via the hamburger button, and closes on clicking 'X' or outside (scrim).
  */
 @Composable
-fun FoundITApp() {
+fun FoundITApp(
+    authViewModel: AuthViewModel = viewModel()
+) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     var currentScreen by remember { mutableStateOf<Screen>(Screen.Home) }
+
+    val authState by authViewModel.authState.collectAsState()
+    val currentUserProfile = (authState as? AuthState.Authenticated)?.profile
 
     // Intercept back button safely only when an OnBackPressedDispatcherOwner is present
     val backDispatcherOwner = LocalOnBackPressedDispatcherOwner.current
@@ -56,6 +65,7 @@ fun FoundITApp() {
         drawerContent = {
             FoundITSidebar(
                 currentScreen = currentScreen,
+                userProfile = currentUserProfile,
                 onNavigate = { screen ->
                     currentScreen = screen
                     scope.launch {
@@ -96,7 +106,7 @@ fun FoundITApp() {
                 ) { screen ->
                     when (screen) {
                         is Screen.Home -> HomeScreen()
-                        is Screen.MyAccount -> AccountScreen()
+                        is Screen.MyAccount -> AccountScreen(authViewModel = authViewModel)
                     }
                 }
             }

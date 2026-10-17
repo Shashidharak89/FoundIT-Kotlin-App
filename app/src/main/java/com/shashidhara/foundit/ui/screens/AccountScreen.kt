@@ -51,10 +51,30 @@ import com.shashidhara.foundit.ui.theme.CyberTealLight
 import com.shashidhara.foundit.ui.theme.CyberTealMuted
 import com.shashidhara.foundit.ui.theme.CyberTealSoft
 
+import android.widget.Toast
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.SubcomposeAsyncImage
+import com.shashidhara.foundit.data.repository.AuthState
+import com.shashidhara.foundit.ui.viewmodel.AuthViewModel
+
 @Composable
 fun AccountScreen(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    authViewModel: AuthViewModel = viewModel()
 ) {
+    val context = LocalContext.current
+    val authState by authViewModel.authState.collectAsState()
+    val isSigningIn by authViewModel.isSigningIn.collectAsState()
+    val errorMessage by authViewModel.errorMessage.collectAsState()
+
+    val currentProfile = (authState as? AuthState.Authenticated)?.profile
+
     var matchAlertsEnabled by remember { mutableStateOf(true) }
     var locationSharingEnabled by remember { mutableStateOf(true) }
     var twoFactorEnabled by remember { mutableStateOf(false) }
@@ -92,6 +112,14 @@ fun AccountScreen(
                     .padding(20.dp)
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    val initials = currentProfile?.name
+                        ?.split(" ")
+                        ?.mapNotNull { it.firstOrNull()?.toString() }
+                        ?.take(2)
+                        ?.joinToString("")
+                        ?.uppercase()
+                        ?.ifEmpty { "FI" } ?: "G"
+
                     // Avatar Box
                     Box(
                         modifier = Modifier
@@ -105,36 +133,64 @@ fun AccountScreen(
                             .border(2.5.dp, AquaFoamBase, CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = "AM",
-                            fontSize = 28.sp,
-                            fontWeight = FontWeight.Black,
-                            color = AquaFoamLighter
-                        )
+                        if (currentProfile?.photoUrl?.isNotBlank() == true) {
+                            SubcomposeAsyncImage(
+                                model = currentProfile.photoUrl,
+                                contentDescription = currentProfile.name,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clip(CircleShape),
+                                loading = {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(24.dp),
+                                        color = AquaFoamBase,
+                                        strokeWidth = 2.dp
+                                    )
+                                },
+                                error = {
+                                    Text(
+                                        text = initials,
+                                        fontSize = 28.sp,
+                                        fontWeight = FontWeight.Black,
+                                        color = AquaFoamLighter
+                                    )
+                                }
+                            )
+                        } else {
+                            Text(
+                                text = initials,
+                                fontSize = 28.sp,
+                                fontWeight = FontWeight.Black,
+                                color = AquaFoamLighter
+                            )
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(14.dp))
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = "Alex Mercer",
+                            text = currentProfile?.name?.ifBlank { "FoundIT Member" } ?: "Guest Explorer",
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
                             color = AquaFoamLighter
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Icon(
-                            imageVector = FoundITIcons.Check,
-                            contentDescription = "Verified Member",
-                            tint = AquaFoamBase,
-                            modifier = Modifier.size(18.dp)
-                        )
+                        if (currentProfile != null) {
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Icon(
+                                imageVector = FoundITIcons.Check,
+                                contentDescription = "Verified Member",
+                                tint = AquaFoamBase,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(4.dp))
 
                     Text(
-                        text = "alex.mercer@foundit.app",
+                        text = currentProfile?.email?.ifBlank { "Sign in with Google to sync profile" } ?: "Sign in with Google to sync profile",
                         fontSize = 13.sp,
                         color = AquaFoamMedium
                     )
@@ -149,7 +205,7 @@ fun AccountScreen(
                             .padding(horizontal = 10.dp, vertical = 4.dp)
                     ) {
                         Text(
-                            text = "COMMUNITY RECOVERY HERO",
+                            text = if (currentProfile != null) "ROLE: ${currentProfile.role.uppercase()}" else "AUTHENTICATION REQUIRED",
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
                             color = AquaFoamBase,
@@ -166,17 +222,17 @@ fun AccountScreen(
                     ) {
                         ProfileMetric(
                             title = "Items Returned",
-                            value = "3",
+                            value = if (currentProfile != null) "0" else "--",
                             modifier = Modifier.weight(1f)
                         )
                         ProfileMetric(
                             title = "Items Recovered",
-                            value = "1",
+                            value = if (currentProfile != null) "0" else "--",
                             modifier = Modifier.weight(1f)
                         )
                         ProfileMetric(
                             title = "Karma Score",
-                            value = "99.4",
+                            value = if (currentProfile != null) "100" else "--",
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -200,12 +256,12 @@ fun AccountScreen(
                 AccountInfoRow(
                     icon = FoundITIcons.Email,
                     label = "Email Address",
-                    value = "alex.mercer@foundit.app"
+                    value = currentProfile?.email?.ifBlank { "Not connected" } ?: "Not connected"
                 )
                 AccountInfoRow(
                     icon = FoundITIcons.Phone,
                     label = "Emergency Phone",
-                    value = "+1 (555) 438-2910"
+                    value = if (currentProfile != null) "+1 (555) 438-2910" else "Add phone number"
                 )
                 AccountInfoRow(
                     icon = FoundITIcons.Location,
@@ -254,54 +310,156 @@ fun AccountScreen(
             }
         }
 
-        // Edit Profile & Action Buttons
+        if (errorMessage != null) {
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(CyberTealDark)
+                        .border(1.dp, AquaFoamBase, RoundedCornerShape(16.dp))
+                        .padding(14.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "AUTHENTICATION ERROR",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = AquaFoamBase,
+                                letterSpacing = 1.sp
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = errorMessage ?: "",
+                                fontSize = 12.sp,
+                                color = AquaFoamLight,
+                                lineHeight = 16.sp
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .background(CyberTealMuted)
+                                .clickable { authViewModel.clearError() },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = FoundITIcons.Close,
+                                contentDescription = "Dismiss",
+                                tint = AquaFoamBase,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // Action Buttons: Sign In with Google OR Edit Profile + Sign Out
         item {
             Spacer(modifier = Modifier.height(24.dp))
 
-            Button(
-                onClick = { },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = CyberTealBase,
-                    contentColor = AquaFoamLighter
-                )
-            ) {
-                Icon(
-                    imageVector = FoundITIcons.Edit,
-                    contentDescription = null,
-                    tint = AquaFoamLighter,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Edit Account Profile",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
+            if (currentProfile == null) {
+                Button(
+                    onClick = { authViewModel.signInWithGoogle(context) },
+                    enabled = !isSigningIn,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = CyberTealBase,
+                        contentColor = AquaFoamLighter
+                    )
+                ) {
+                    if (isSigningIn) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = AquaFoamLighter,
+                            strokeWidth = 2.dp
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = "Connecting with Google...",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    } else {
+                        Icon(
+                            imageVector = FoundITIcons.Google,
+                            contentDescription = "Google Sign In",
+                            tint = AquaFoamLighter,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = "Sign in with Google",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            } else {
+                Button(
+                    onClick = { },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = CyberTealBase,
+                        contentColor = AquaFoamLighter
+                    )
+                ) {
+                    Icon(
+                        imageVector = FoundITIcons.Edit,
+                        contentDescription = null,
+                        tint = AquaFoamLighter,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Edit Account Profile",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
 
-            Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
-            Button(
-                onClick = { },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp)
-                    .border(1.dp, CyberTealElevated, RoundedCornerShape(16.dp)),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = CyberTealDark,
-                    contentColor = AquaFoamDark
-                )
-            ) {
-                Text(
-                    text = "Sign Out from FoundIT",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
+                Button(
+                    onClick = { authViewModel.signOut(context) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp)
+                        .border(1.dp, CyberTealElevated, RoundedCornerShape(16.dp)),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = CyberTealDark,
+                        contentColor = AquaFoamBase
+                    )
+                ) {
+                    Icon(
+                        imageVector = FoundITIcons.SignOut,
+                        contentDescription = null,
+                        tint = AquaFoamBase,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Sign Out from FoundIT",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(30.dp))

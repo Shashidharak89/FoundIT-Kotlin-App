@@ -30,9 +30,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.SubcomposeAsyncImage
+import com.shashidhara.foundit.data.model.UserProfile
 import com.shashidhara.foundit.ui.navigation.Screen
 import com.shashidhara.foundit.ui.theme.AquaFoamBase
 import com.shashidhara.foundit.ui.theme.AquaFoamLight
@@ -58,7 +61,8 @@ fun FoundITSidebar(
     currentScreen: Screen,
     onNavigate: (Screen) -> Unit,
     onCloseClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    userProfile: UserProfile? = null
 ) {
     val scrollState = rememberScrollState()
 
@@ -330,7 +334,10 @@ fun FoundITSidebar(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        modifier = Modifier.weight(1f, fill = false),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Box(
                             modifier = Modifier
                                 .size(36.dp)
@@ -339,39 +346,62 @@ fun FoundITSidebar(
                                 .border(1.5.dp, AquaFoamBase, CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                text = "FI",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = AquaFoamLighter
-                            )
+                            if (!userProfile?.photoUrl.isNullOrBlank()) {
+                                SubcomposeAsyncImage(
+                                    model = userProfile?.photoUrl,
+                                    contentDescription = "User Avatar",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(CircleShape),
+                                    error = {
+                                        Text(
+                                            text = userProfile?.name?.take(2)?.uppercase()?.ifBlank { "FI" } ?: "FI",
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = AquaFoamLighter
+                                        )
+                                    }
+                                )
+                            } else {
+                                Text(
+                                    text = userProfile?.name?.take(2)?.uppercase()?.ifBlank { "FI" } ?: "FI",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = AquaFoamLighter
+                                )
+                            }
                         }
                         Spacer(modifier = Modifier.width(10.dp))
-                        Column {
+                        Column(modifier = Modifier.weight(1f, fill = false)) {
                             Text(
-                                text = "FoundIT App",
+                                text = userProfile?.name?.ifBlank { "FoundIT User" } ?: "FoundIT App",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = AquaFoamLight
+                                color = AquaFoamLight,
+                                maxLines = 1
                             )
                             Text(
-                                text = "Cyber Edition v1.0",
+                                text = userProfile?.email?.ifBlank { "Cyber Edition v1.0" } ?: "Cyber Edition v1.0",
                                 fontSize = 11.sp,
-                                color = CyberTealSoft
+                                color = CyberTealSoft,
+                                maxLines = 1
                             )
                         }
                     }
 
-                    // Status pill
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    // Status / Role pill
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
-                            .background(AquaFoamMuted)
+                            .background(if (userProfile != null) AquaFoamMuted else AquaFoamMuted.copy(alpha = 0.5f))
                             .border(1.dp, AquaFoamBase.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
                             .padding(horizontal = 8.dp, vertical = 4.dp)
                     ) {
                         Text(
-                            text = "LIVE",
+                            text = userProfile?.role?.ifBlank { "USER" } ?: "LIVE",
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
                             color = AquaFoamLighter

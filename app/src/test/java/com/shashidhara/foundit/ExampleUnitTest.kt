@@ -6,8 +6,13 @@ import com.shashidhara.foundit.ui.FoundITApp
 import com.shashidhara.foundit.ui.screens.AccountScreen
 import com.shashidhara.foundit.ui.screens.HomeScreen
 import com.shashidhara.foundit.ui.theme.FoundITTheme
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
+import com.google.firebase.FirebaseApp
+import com.google.firebase.FirebaseOptions
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -21,6 +26,21 @@ class ExampleUnitTest {
 
     @get:Rule
     val composeTestRule = createComposeRule()
+
+    @Before
+    fun setUp() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        if (FirebaseApp.getApps(context).isEmpty()) {
+            FirebaseApp.initializeApp(
+                context,
+                FirebaseOptions.Builder()
+                    .setApplicationId("com.shashidhara.foundit")
+                    .setApiKey("AIzaSyFakeKeyForUnitTests")
+                    .setProjectId("foundit-items")
+                    .build()
+            )
+        }
+    }
 
     @Test
     fun testLaunchMainActivity() {
