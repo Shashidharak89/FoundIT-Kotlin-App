@@ -120,17 +120,30 @@ fun FoundITApp(
                     label = "pageTransition"
                 ) { screen ->
                     when (screen) {
-                        is Screen.Home -> HomeScreen(
-                            postViewModel = postViewModel,
-                            currentUser = currentUserProfile,
-                            onNavigateToCreatePost = { postType ->
-                                initialCreatePostType = postType
-                                currentScreen = Screen.CreatePost
-                            },
-                            onNavigateToAccount = {
-                                currentScreen = Screen.MyAccount
-                            }
-                        )
+                        is Screen.Home -> {
+                            val context = androidx.compose.ui.platform.LocalContext.current
+                            HomeScreen(
+                                postViewModel = postViewModel,
+                                currentUser = currentUserProfile,
+                                onNavigateToCreatePost = { postType ->
+                                    if (currentUserProfile == null) {
+                                        currentScreen = Screen.MyAccount
+                                    } else {
+                                        initialCreatePostType = postType
+                                        currentScreen = Screen.CreatePost
+                                    }
+                                },
+                                onNavigateToAccount = {
+                                    currentScreen = Screen.MyAccount
+                                },
+                                onNavigateToMyPosts = {
+                                    currentScreen = Screen.MyPosts
+                                },
+                                onSignInClick = {
+                                    authViewModel.signInWithGoogle(context)
+                                }
+                            )
+                        }
                         is Screen.CreatePost -> CreatePostScreen(
                             postViewModel = postViewModel,
                             currentUser = currentUserProfile,

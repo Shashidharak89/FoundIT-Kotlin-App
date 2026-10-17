@@ -262,6 +262,127 @@ class PostViewModel(
         _requestFeedback.value = null
     }
 
+    fun cancelPostRequest(requestId: String, postId: String, currentUserUid: String) {
+        viewModelScope.launch {
+            val result = requestRepository.cancelRequest(requestId)
+            if (result.isSuccess) {
+                _requestFeedback.value = "Your request was cancelled."
+                checkUserRequestForPost(postId, currentUserUid)
+            } else {
+                _requestFeedback.value = result.exceptionOrNull()?.message ?: "Failed to cancel request."
+            }
+        }
+    }
+
+    // --- Post Details Selection & Owner Actions ---
+
+    private val _selectedPostForDetails = MutableStateFlow<PostItem?>(null)
+    val selectedPostForDetails: StateFlow<PostItem?> = _selectedPostForDetails.asStateFlow()
+
+    fun selectPostForDetails(post: PostItem?, currentUserUid: String? = null) {
+        _selectedPostForDetails.value = post
+        if (post != null && !currentUserUid.isNullOrBlank()) {
+            checkUserRequestForPost(post.id, currentUserUid)
+        } else {
+            _currentPostRequest.value = null
+        }
+    }
+
+    fun clearSelectedPost() {
+        _selectedPostForDetails.value = null
+        _currentPostRequest.value = null
+    }
+
+    fun deletePost(postId: String, onSuccess: () -> Unit = {}, onError: (String) -> Unit = {}) {
+        viewModelScope.launch {
+            val result = postRepository.deletePost(postId)
+            if (result.isSuccess) {
+                _feedUiState.update { state ->
+                    state.copy(posts = state.posts.filter { it.id != postId })
+                }
+                if (_selectedPostForDetails.value?.id == postId) {
+                    _selectedPostForDetails.value = null
+                }
+                onSuccess()
+            } else {
+                val errorMsg = result.exceptionOrNull()?.localizedMessage ?: "Failed to delete post."
+                onError(errorMsg)
+            }
+        }
+    }
+
+    fun updatePost(
+        postId: String,
+        title: String,
+        description: String,
+        category: String,
+        location: String,
+        status: String,
+        onSuccess: () -> Unit = {},
+        onError: (String) -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            val result = postRepository.updatePost(
+                postId = postId,
+                title = title,
+                description = description,
+                category = category,
+                location = location,
+                status = status
+            )
+            if (result.isSuccess) {
+                _feedUiState.update { state ->
+                    state.copy(
+                        posts = state.posts.map {
+                            if (it.id == postId) {
+                                it.copy(
+                                    title = title,
+                                    description = description,
+                                    category = category,
+                                    location = location,
+                                    status = status
+                                )
+                            } else it
+                        }
+                    )
+                }
+                _selectedPostForDetails.update { current ->
+                    if (current?.id == postId) {
+                        current.copy(
+                            title = title,
+                            description = description,
+                            category = category,
+                            location = location,
+                            status = status
+                        )
+                    } else current
+                }
+                onSuccess()
+            } else {
+                val errorMsg = result.exceptionOrNull()?.localizedMessage ?: "Failed to update post."
+                onError(errorMsg)
+            }
+        }
+    }
+
+    fun updatePostStatus(
+        post: PostItem,
+        newStatus: String,
+        onSuccess: () -> Unit = {},
+        onError: (String) -> Unit = {}
+    ) {
+        updatePost(
+            postId = post.id,
+            title = post.title,
+            description = post.description,
+            category = post.category,
+            location = post.location,
+            status = newStatus,
+            onSuccess = onSuccess,
+            onError = onError
+        )
+    }
+
     // --- Create Post Form State ---
 
     private val _title = MutableStateFlow("")

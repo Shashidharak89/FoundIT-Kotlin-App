@@ -200,4 +200,43 @@ class ExampleUnitTest {
             }
         }
     }
+
+    @Test
+    fun testOwnershipDeterminationByUid() {
+        val post = com.shashidhara.foundit.data.model.PostItem(
+            id = "post_999",
+            ownerUid = "owner_uid_abc",
+            title = "Found Keys",
+            type = "FOUND"
+        )
+
+        val ownerUser = com.shashidhara.foundit.data.model.UserProfile(
+            uid = "owner_uid_abc",
+            name = "John Doe",
+            email = "john@example.com"
+        )
+
+        val otherUser = com.shashidhara.foundit.data.model.UserProfile(
+            uid = "other_uid_xyz",
+            name = "John Doe", // Even if display name matches, ownership must be strictly UID-based!
+            email = "john.another@example.com"
+        )
+
+        assertEquals(true, ownerUser.uid == post.ownerUid)
+        assertEquals(false, otherUser.uid == post.ownerUid)
+    }
+
+    @Test
+    fun testHomeScreenPublicGuestRenderingWithoutCrash() {
+        // Guest user (currentUser = null) browsing recent posts
+        composeTestRule.setContent {
+            FoundITTheme {
+                com.shashidhara.foundit.ui.screens.HomeScreen(
+                    currentUser = null,
+                    onNavigateToCreatePost = {},
+                    onNavigateToAccount = {}
+                )
+            }
+        }
+    }
 }

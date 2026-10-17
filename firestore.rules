@@ -47,8 +47,8 @@ service cloud.firestore {
     // Community Lost & Found Posts Collection: /posts/{postId}
     // =========================================================================
     match /posts/{postId} {
-      // Authenticated users can read community posts
-      allow read: if isAuthenticated();
+      // Community posts are publicly readable by guests and authenticated users
+      allow read: if true;
 
       // Authenticated users can create posts matching the approved schema
       allow create: if isAuthenticated()
