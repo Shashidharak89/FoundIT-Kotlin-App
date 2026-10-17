@@ -3,39 +3,61 @@ package com.shashidhara.foundit.ui.theme
 import androidx.compose.ui.graphics.Color
 
 /**
- * FoundIT Cyber Palette
- * Exclusively using Cyber Teal (#6A00FA) & Aqua Foam (#FFD6A5) and their dark/light shades.
+ * FoundIT Brand Color Palette
+ * Built strictly on #06363A (Deep Pine Teal) and #98FFE1 (Vibrant Mint Green),
+ * their harmonious tints and shades, plus pure black and white.
  */
 
-// --- Cyber Teal (#6A00FA) Spectrum ---
-// Dark Shades
-val CyberTealDarkest = Color(0xFF0C0219)     // Deepest space background
-val CyberTealDarker  = Color(0xFF16052E)     // Drawer and card surface background
-val CyberTealDark    = Color(0xFF24084A)     // Elevated surface / navigation background
-val CyberTealElevated = Color(0xFF350C6D)    // Borders, dividers, subtle card highlight
-val CyberTealMedium  = Color(0xFF4C0E99)     // Secondary button surfaces, inactive fills
+// --- Base Theme Constants ---
+val ColorTealDarkBase = Color(0xFF06363A)   // Primary Dark: #06363A
+val ColorMintAquaBase = Color(0xFF98FFE1)   // Primary Light Accent: #98FFE1
 
-// Core Cyber Teal
-val CyberTealBase    = Color(0xFF6A00FA)     // Primary brand cyber teal / violet (#6A00FA)
+// --- Black & White Constants ---
+val ColorPureBlack    = Color(0xFF000000)
+val ColorPureWhite    = Color(0xFFFFFFFF)
+val ColorMidnightTeal = Color(0xFF021618)   // Near-black dark canvas background
 
-// Light Shades
-val CyberTealLight   = Color(0xFF8E3EFF)     // Vibrant hover / active highlight
-val CyberTealSoft    = Color(0xFFB47DFF)     // Secondary accent text, icons
-val CyberTealMuted   = Color(0x336A00FA)     // Subtle glow / pill container background
-val CyberTealGhost   = Color(0x1A6A00FA)     // Faint background tint
+// --- Deep Teal (#06363A) Spectrum ---
+val DeepTealDarkest   = Color(0xFF021618)   // Main screen scaffold background
+val DeepTealDarker    = Color(0xFF032225)   // Drawer, cards, elevated modal sheets
+val DeepTealDark      = Color(0xFF06363A)   // Core #06363A card & container surface
+val DeepTealElevated  = Color(0xFF0E4A50)   // Card borders, textfield outlines, dividers
+val DeepTealMedium    = Color(0xFF145D64)   // Secondary button surfaces, inactive pills
+val DeepTealBase      = Color(0xFF06363A)   // Core Deep Teal (#06363A)
+val DeepTealLight     = Color(0xFF1F7B84)   // Active highlight / teal border accent
+val DeepTealSoft      = Color(0xFF2FA2AD)   // Secondary accent icons & labels
+val DeepTealMuted     = Color(0x3306363A)   // 20% alpha container tint
+val DeepTealGhost     = Color(0x1406363A)   // 8% alpha subtle background
 
+// --- Vibrant Mint (#98FFE1) Spectrum ---
+val MintBrightest     = Color(0xFFFFFFFF)   // Pure white text / high contrast
+val MintLighter       = Color(0xFFE8FFF8)   // Primary headline & bright icon highlight
+val MintLight         = Color(0xFFC4FCEE)   // Secondary body text & high-contrast labels
+val MintBase          = Color(0xFF98FFE1)   // Core Vibrant Mint (#98FFE1)
+val MintMedium        = Color(0xFF6DF7D2)   // Interactive button & active state
+val MintDark          = Color(0xFF38D9B0)   // Subdued accent / badge outline
+val MintDarker        = Color(0xFF1BAE88)   // Deep mint border
+val MintDeepest       = Color(0xFF0D5243)   // Deep badge background container
+val MintMuted         = Color(0x2698FFE1)   // 15% mint container background tint
+val MintGlow          = Color(0x4098FFE1)   // 25% mint border glow
 
-// --- Aqua Foam (#FFD6A5) Spectrum ---
-// Light Shades
-val AquaFoamLighter  = Color(0xFFFFF9F0)     // Brightest text & icon highlights
-val AquaFoamLight    = Color(0xFFFFF0DC)     // Primary body text / crisp high contrast
-val AquaFoamMuted    = Color(0x40FFD6A5)     // Soft chip & badge fill tint
+// --- Semantic Color Aliases for Seamless App Compatibility ---
+val CyberTealDarkest  = DeepTealDarkest
+val CyberTealDarker   = DeepTealDarker
+val CyberTealDark     = DeepTealDark
+val CyberTealElevated = DeepTealElevated
+val CyberTealMedium   = DeepTealMedium
+val CyberTealBase     = MintBase            // Primary action color (#98FFE1)
+val CyberTealLight    = MintMedium          // Vibrant interactive accent
+val CyberTealSoft     = MintDark            // Soft accent text & icons
+val CyberTealMuted    = MintMuted           // Translucent pill container
+val CyberTealGhost    = Color(0x1498FFE1)   // Subtle background glow
 
-// Core Aqua Foam
-val AquaFoamBase     = Color(0xFFFFD6A5)     // Core Aqua Foam (#FFD6A5)
-
-// Medium & Dark Shades
-val AquaFoamMedium   = Color(0xFFFFBF75)     // Warm interactive state / badges
-val AquaFoamDark     = Color(0xFFD69A57)     // Subdued text / outline borders
-val AquaFoamDarker   = Color(0xFF9E6523)     // Deep accent borders
-val AquaFoamDeepest  = Color(0xFF422605)     // Dark pill background for aqua foam tags
+val AquaFoamLighter   = MintLighter         // #E8FFF8
+val AquaFoamLight     = MintLight           // #C4FCEE
+val AquaFoamMuted     = MintMuted           // 15% #98FFE1
+val AquaFoamBase      = MintBase            // #98FFE1
+val AquaFoamMedium    = MintMedium          // #6DF7D2
+val AquaFoamDark      = MintDark            // #38D9B0
+val AquaFoamDarker    = MintDarker          // #1BAE88
+val AquaFoamDeepest   = MintDeepest         // #0D5243

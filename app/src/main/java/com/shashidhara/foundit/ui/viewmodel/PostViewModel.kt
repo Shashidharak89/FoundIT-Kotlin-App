@@ -11,12 +11,15 @@ import com.shashidhara.foundit.data.model.UserProfile
 import com.shashidhara.foundit.data.repository.CloudinaryRepository
 import com.shashidhara.foundit.data.repository.CloudinaryUploadResult
 import com.shashidhara.foundit.data.repository.PostRepository
+import com.google.firebase.firestore.DocumentSnapshot
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 sealed interface SubmissionState {
@@ -27,6 +30,18 @@ sealed interface SubmissionState {
     data class Error(val message: String, val canRetrySave: Boolean) : SubmissionState
 }
 
+data class FeedUiState(
+    val posts: List<PostItem> = emptyList(),
+    val isLoading: Boolean = false,
+    val isLoadingMore: Boolean = false,
+    val hasMore: Boolean = true,
+    val page: Int = 1,
+    val pageSize: Int = 20,
+    val searchQuery: String = "",
+    val selectedCategory: String = "All Items",
+    val error: String? = null
+)
+
 class PostViewModel(
     private val postRepository: PostRepository = PostRepository(),
     private val cloudinaryRepository: CloudinaryRepository = CloudinaryRepository()
@@ -36,17 +51,130 @@ class PostViewModel(
         private const val TAG = "FoundIT_PostVM"
     }
 
-    // Community feed posts from Firestore
-    val posts: StateFlow<List<PostItem>> = postRepository.getPostsFlow()
-        .catch { e ->
-            Log.e(TAG, "Error collecting posts feed", e)
-            emit(emptyList())
-        }
+    private var lastSnapshot: DocumentSnapshot? = null
+
+    // Real-time & paginated feed UI state
+    private val _feedUiState = MutableStateFlow(FeedUiState())
+    val feedUiState: StateFlow<FeedUiState> = _feedUiState.asStateFlow()
+
+    // Backward-compatible posts flow for components observing posts directly
+    val posts: StateFlow<List<PostItem>> = _feedUiState
+        .map { it.posts }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
+
+    init {
+        loadInitialPosts()
+    }
+
+    fun onSearchQueryChanged(query: String) {
+        if (_feedUiState.value.searchQuery == query) return
+        _feedUiState.update { it.copy(searchQuery = query) }
+        loadInitialPosts(search = query, category = _feedUiState.value.selectedCategory)
+    }
+
+    fun onCategorySelected(category: String) {
+        if (_feedUiState.value.selectedCategory == category) return
+        _feedUiState.update { it.copy(selectedCategory = category) }
+        loadInitialPosts(search = _feedUiState.value.searchQuery, category = category)
+    }
+
+    fun refreshFeed() {
+        loadInitialPosts(
+            search = _feedUiState.value.searchQuery,
+            category = _feedUiState.value.selectedCategory
+        )
+    }
+
+    fun loadNextPage() {
+        val currentState = _feedUiState.value
+        if (currentState.isLoading || currentState.isLoadingMore || !currentState.hasMore) {
+            return
+        }
+
+        viewModelScope.launch {
+            _feedUiState.update { it.copy(isLoadingMore = true) }
+            val nextPage = currentState.page + 1
+
+            val result = postRepository.getPostsPaginated(
+                page = nextPage,
+                pageSize = currentState.pageSize,
+                searchQuery = currentState.searchQuery,
+                category = currentState.selectedCategory,
+                lastSnapshot = lastSnapshot
+            )
+
+            if (result.isSuccess) {
+                val paginated = result.getOrThrow()
+                lastSnapshot = paginated.lastSnapshot
+                _feedUiState.update {
+                    it.copy(
+                        posts = it.posts + paginated.posts,
+                        isLoadingMore = false,
+                        hasMore = paginated.hasMore,
+                        page = nextPage,
+                        error = null
+                    )
+                }
+            } else {
+                _feedUiState.update {
+                    it.copy(
+                        isLoadingMore = false,
+                        error = result.exceptionOrNull()?.message
+                    )
+                }
+            }
+        }
+    }
+
+    private fun loadInitialPosts(
+        search: String = _feedUiState.value.searchQuery,
+        category: String = _feedUiState.value.selectedCategory
+    ) {
+        viewModelScope.launch {
+            _feedUiState.update {
+                it.copy(
+                    isLoading = true,
+                    page = 1,
+                    hasMore = true,
+                    error = null
+                )
+            }
+            lastSnapshot = null
+
+            val result = postRepository.getPostsPaginated(
+                page = 1,
+                pageSize = 20,
+                searchQuery = search,
+                category = category,
+                lastSnapshot = null
+            )
+
+            if (result.isSuccess) {
+                val paginated = result.getOrThrow()
+                lastSnapshot = paginated.lastSnapshot
+                _feedUiState.update {
+                    it.copy(
+                        posts = paginated.posts,
+                        isLoading = false,
+                        hasMore = paginated.hasMore,
+                        page = 1,
+                        error = null
+                    )
+                }
+            } else {
+                _feedUiState.update {
+                    it.copy(
+                        isLoading = false,
+                        error = result.exceptionOrNull()?.message
+                    )
+                }
+            }
+        }
+    }
 
     // Form states
     private val _title = MutableStateFlow("")
@@ -229,6 +357,7 @@ class PostViewModel(
                 Log.d(TAG, "Post saved to Firestore with ID: ${firestoreResult.getOrNull()}")
                 _submissionState.value = SubmissionState.Success
                 resetForm()
+                refreshFeed()
             } else {
                 val error = firestoreResult.exceptionOrNull()
                 Log.e(TAG, "Failed to save post to Firestore", error)

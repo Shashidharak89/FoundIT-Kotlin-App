@@ -13,6 +13,7 @@ import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -60,6 +61,12 @@ fun FoundITApp(
             } else {
                 currentScreen = Screen.Home
             }
+        }
+    }
+
+    LaunchedEffect(authState) {
+        if (authState is AuthState.Authenticated) {
+            postViewModel.refreshFeed()
         }
     }
 
@@ -116,6 +123,9 @@ fun FoundITApp(
                             onNavigateToCreatePost = { postType ->
                                 initialCreatePostType = postType
                                 currentScreen = Screen.CreatePost
+                            },
+                            onNavigateToAccount = {
+                                currentScreen = Screen.MyAccount
                             }
                         )
                         is Screen.CreatePost -> CreatePostScreen(

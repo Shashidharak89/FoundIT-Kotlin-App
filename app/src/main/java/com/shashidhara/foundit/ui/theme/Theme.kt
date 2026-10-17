@@ -7,55 +7,55 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 
 private val FoundITDarkColorScheme = darkColorScheme(
-    primary = CyberTealBase,
-    onPrimary = AquaFoamLighter,
-    primaryContainer = CyberTealDark,
-    onPrimaryContainer = AquaFoamLight,
+    primary = MintBase,
+    onPrimary = DeepTealDark,
+    primaryContainer = DeepTealDark,
+    onPrimaryContainer = MintLighter,
 
-    secondary = AquaFoamBase,
-    onSecondary = CyberTealDarkest,
-    secondaryContainer = CyberTealDarker,
-    onSecondaryContainer = AquaFoamLight,
+    secondary = MintMedium,
+    onSecondary = DeepTealDarkest,
+    secondaryContainer = DeepTealDarker,
+    onSecondaryContainer = MintLight,
 
-    tertiary = CyberTealLight,
-    onTertiary = AquaFoamLighter,
+    tertiary = MintDark,
+    onTertiary = DeepTealDarkest,
 
-    background = CyberTealDarkest,
-    onBackground = AquaFoamLight,
+    background = DeepTealDarkest,
+    onBackground = MintLight,
 
-    surface = CyberTealDarker,
-    onSurface = AquaFoamLight,
-    surfaceVariant = CyberTealDark,
-    onSurfaceVariant = AquaFoamMedium,
+    surface = DeepTealDarker,
+    onSurface = MintLighter,
+    surfaceVariant = DeepTealDark,
+    onSurfaceVariant = MintLight,
 
-    outline = CyberTealElevated,
-    outlineVariant = CyberTealMedium
+    outline = DeepTealElevated,
+    outlineVariant = DeepTealMedium
 )
 
 private val FoundITLightColorScheme = lightColorScheme(
-    primary = CyberTealBase,
-    onPrimary = AquaFoamLighter,
-    primaryContainer = CyberTealDark,
-    onPrimaryContainer = AquaFoamLight,
+    primary = DeepTealDark,
+    onPrimary = MintLighter,
+    primaryContainer = DeepTealDarker,
+    onPrimaryContainer = MintLight,
 
-    secondary = AquaFoamDark,
-    onSecondary = AquaFoamLighter,
-    secondaryContainer = AquaFoamLight,
-    onSecondaryContainer = CyberTealDarkest,
+    secondary = MintDarker,
+    onSecondary = ColorPureWhite,
+    secondaryContainer = MintLight,
+    onSecondaryContainer = DeepTealDarkest,
 
-    tertiary = CyberTealMedium,
-    onTertiary = AquaFoamLighter,
+    tertiary = DeepTealMedium,
+    onTertiary = ColorPureWhite,
 
-    background = CyberTealDarkest,
-    onBackground = AquaFoamLight,
+    background = DeepTealDarkest,
+    onBackground = MintLight,
 
-    surface = CyberTealDarker,
-    onSurface = AquaFoamLight,
-    surfaceVariant = CyberTealDark,
-    onSurfaceVariant = AquaFoamMedium,
+    surface = DeepTealDarker,
+    onSurface = MintLighter,
+    surfaceVariant = DeepTealDark,
+    onSurfaceVariant = MintLight,
 
-    outline = CyberTealElevated,
-    outlineVariant = CyberTealMedium
+    outline = DeepTealElevated,
+    outlineVariant = DeepTealMedium
 )
 
 @Composable
@@ -63,7 +63,7 @@ fun FoundITTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
-    // We intentionally adhere exclusively to Cyber Teal (#6A00FA) & Aqua Foam (#FFD6A5) shades
+    // Exclusively built on #06363A & #98FFE1
     val colorScheme = if (darkTheme) FoundITDarkColorScheme else FoundITLightColorScheme
 
     MaterialTheme(
