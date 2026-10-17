@@ -12,7 +12,20 @@
           "package_name": "com.shashidhara.foundit"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "240086993355-qk32s1mdf83q67kmpi49mm9rfmqtp9hf.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.shashidhara.foundit",
+            "certificate_hash": "4205362ddb25c9f5f63b4aacfb676c1a22001d92"
+          }
+        },
+        {
+          "client_id": "240086993355-hh49c99jdif89av7vb5gj4umiepnshin.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAhe96yABPEgd7Nm0eGoMbkdVHqEneYJvo"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "240086993355-hh49c99jdif89av7vb5gj4umiepnshin.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

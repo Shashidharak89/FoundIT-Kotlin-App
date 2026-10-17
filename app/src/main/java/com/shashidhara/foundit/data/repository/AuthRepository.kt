@@ -1,16 +1,21 @@
 package com.shashidhara.foundit.data.repository
 
+import android.app.Activity
 import android.content.Context
+import android.content.ContextWrapper
+import android.util.Log
 import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialCancellationException
+import androidx.credentials.exceptions.GetCredentialException
 import androidx.credentials.exceptions.NoCredentialException
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthException
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FieldValue
@@ -127,48 +132,103 @@ class AuthRepository(
         }
     }
 
+    companion object {
+        private const val TAG = "FoundIT_Auth"
+        private const val FALLBACK_WEB_CLIENT_ID = "240086993355-hh49c99jdif89av7vb5gj4umiepnshin.apps.googleusercontent.com"
+    }
+
+    private fun Context.findActivity(): Activity? {
+        var ctx: Context? = this
+        while (ctx is ContextWrapper) {
+            if (ctx is Activity) return ctx
+            ctx = ctx.baseContext
+        }
+        return null
+    }
+
     /**
      * Signs in with Google using modern Android Credential Manager and exchanges with Firebase Auth.
+     * Follows the recommended fallback pattern:
+     * 1. Try authorized accounts first (seamless sign-in for returning users).
+     * 2. If NoCredentialException is thrown, fall back to all eligible accounts on the device.
      */
     suspend fun signInWithGoogle(context: Context): Result<UserProfile> {
+        val activityContext = context.findActivity() ?: context
+        val serverClientId = try {
+            context.getString(R.string.default_web_client_id)
+        } catch (_: Exception) {
+            FALLBACK_WEB_CLIENT_ID
+        }.ifBlank { FALLBACK_WEB_CLIENT_ID }
+
+        Log.d(TAG, "Starting Google Sign-In with serverClientId: $serverClientId")
+
         return try {
-            val credentialManager = CredentialManager.create(context)
-            val serverClientId = context.getString(R.string.default_web_client_id)
+            val credentialManager = CredentialManager.create(activityContext)
 
-            val googleIdOption = GetGoogleIdOption.Builder()
-                .setFilterByAuthorizedAccounts(false)
-                .setServerClientId(serverClientId)
-                .setAutoSelectEnabled(false)
-                .build()
+            val response = try {
+                // Step 1: Attempt sign-in with already-authorized accounts (instant sign-in)
+                Log.d(TAG, "Attempting sign-in with setFilterByAuthorizedAccounts(true)")
+                val authorizedOption = GetGoogleIdOption.Builder()
+                    .setFilterByAuthorizedAccounts(true)
+                    .setServerClientId(serverClientId)
+                    .setAutoSelectEnabled(false)
+                    .build()
 
-            val request = GetCredentialRequest.Builder()
-                .addCredentialOption(googleIdOption)
-                .build()
+                val authorizedRequest = GetCredentialRequest.Builder()
+                    .addCredentialOption(authorizedOption)
+                    .build()
 
-            val response = credentialManager.getCredential(
-                request = request,
-                context = context
-            )
+                credentialManager.getCredential(request = authorizedRequest, context = activityContext)
+            } catch (e: NoCredentialException) {
+                // Step 2: Fallback to all eligible Google accounts present on the device
+                Log.d(TAG, "No pre-authorized account found. Falling back to setFilterByAuthorizedAccounts(false)", e)
+                val allAccountsOption = GetGoogleIdOption.Builder()
+                    .setFilterByAuthorizedAccounts(false)
+                    .setServerClientId(serverClientId)
+                    .setAutoSelectEnabled(false)
+                    .build()
+
+                val allAccountsRequest = GetCredentialRequest.Builder()
+                    .addCredentialOption(allAccountsOption)
+                    .build()
+
+                credentialManager.getCredential(request = allAccountsRequest, context = activityContext)
+            }
 
             val credential = response.credential
             if (credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
                 val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
                 val idToken = googleIdTokenCredential.idToken
+
+                Log.d(TAG, "Google ID token received. Exchanging with Firebase Authentication...")
                 val firebaseCredential = GoogleAuthProvider.getCredential(idToken, null)
                 val authResult = auth.signInWithCredential(firebaseCredential).await()
-                val firebaseUser = authResult.user ?: throw IllegalStateException("Firebase authenticated user is null")
+                val firebaseUser = authResult.user ?: throw IllegalStateException("Firebase user is null after authentication")
+
+                Log.d(TAG, "Firebase Authentication successful: uid=${firebaseUser.uid}, email=${firebaseUser.email}")
                 val profile = syncUserProfile(firebaseUser)
                 _authState.value = AuthState.Authenticated(profile)
                 Result.success(profile)
             } else {
-                throw IllegalArgumentException("Unsupported credential received: ${credential.type}")
+                val errorMsg = "Unsupported credential received: ${credential.type}"
+                Log.e(TAG, errorMsg)
+                Result.failure(IllegalArgumentException(errorMsg))
             }
         } catch (e: GetCredentialCancellationException) {
-            Result.failure(Exception("Sign-in cancelled by user."))
+            Log.i(TAG, "User cancelled Google Sign-In: ${e.message}", e)
+            Result.failure(Exception("Sign-in was cancelled."))
         } catch (e: NoCredentialException) {
-            Result.failure(Exception("No Google accounts found. Please add a Google account to your device."))
+            Log.e(TAG, "NoCredentialException: No Google accounts available on this device", e)
+            Result.failure(Exception("No Google accounts found on this device. Please ensure a Google account is added in device Settings."))
+        } catch (e: GetCredentialException) {
+            Log.e(TAG, "GetCredentialException [${e.type}]: ${e.message}", e)
+            Result.failure(Exception("Google Sign-In failed [${e.type}]: ${e.message ?: "Please check Google Play Services."}", e))
+        } catch (e: FirebaseAuthException) {
+            Log.e(TAG, "FirebaseAuthException [${e.errorCode}]: ${e.message}", e)
+            Result.failure(Exception("Firebase Authentication failed [${e.errorCode}]: ${e.localizedMessage}", e))
         } catch (e: Exception) {
-            val message = e.localizedMessage ?: "Google Sign-In failed. Please verify network and Google Services setup."
+            Log.e(TAG, "Unexpected error during Google Sign-In: ${e.message}", e)
+            val message = e.localizedMessage ?: "Google Sign-In failed: ${e::class.simpleName}"
             Result.failure(Exception(message, e))
         }
     }
@@ -176,10 +236,12 @@ class AuthRepository(
     suspend fun signOut(context: Context) {
         auth.signOut()
         try {
-            val credentialManager = CredentialManager.create(context)
+            val activityContext = context.findActivity() ?: context
+            val credentialManager = CredentialManager.create(activityContext)
             credentialManager.clearCredentialState(ClearCredentialStateRequest())
-        } catch (_: Exception) {
-            // Non-critical credential clear failure
+            Log.d(TAG, "CredentialManager state cleared successfully.")
+        } catch (e: Exception) {
+            Log.w(TAG, "Non-critical error clearing credential state: ${e.message}", e)
         }
         _authState.value = AuthState.Unauthenticated
     }
