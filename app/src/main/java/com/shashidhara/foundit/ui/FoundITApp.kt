@@ -153,6 +153,18 @@ fun FoundITApp(
                             authViewModel = authViewModel,
                             onNavigateToMyPosts = { currentScreen = Screen.MyPosts }
                         )
+                        is Screen.AdminPanel -> {
+                            if (currentUserProfile?.role.equals("ADMIN", ignoreCase = true)) {
+                                com.shashidhara.foundit.ui.screens.AdminPanelScreen(
+                                    currentUser = currentUserProfile,
+                                    onNavigateBack = { currentScreen = Screen.Home }
+                                )
+                            } else {
+                                LaunchedEffect(Unit) {
+                                    currentScreen = Screen.Home
+                                }
+                            }
+                        }
                     }
                 }
             }

@@ -11,6 +11,13 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
+    // Role-based privilege check: securely read role from the user's profile document
+    function isAdmin() {
+      return isAuthenticated() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'ADMIN';
+    }
+
     // =========================================================================
     // User Profiles Collection: /users/{userId}
     // =========================================================================
@@ -19,14 +26,14 @@ service cloud.firestore {
       allow read: if isAuthenticated();
 
       // Only the user themselves can create their profile document
-      // Role is restricted to 'USER' on client creation
+      // Role is restricted to 'USER' on client creation to prevent self-promotion
       allow create: if isOwner(userId)
                     && request.resource.data.uid == userId
                     && request.resource.data.role == 'USER'
                     && request.resource.data.createdAt == request.time;
 
       // Users can update their profile information (name, photoUrl),
-      // but cannot change role, createdAt, or uid
+      // but cannot change role, createdAt, or uid (Role provisioning is console-only)
       allow update: if isOwner(userId)
                     && request.resource.data.uid == resource.data.uid
                     && request.resource.data.role == resource.data.role
@@ -62,25 +69,40 @@ service cloud.firestore {
                          'status', 'createdAt', 'updatedAt'
                        ]);
 
-      // Only post owner can update their post without altering ownerUid or createdAt
+      // Updates:
+      // Case 1: Post owner can update their post without altering ownerUid or createdAt
+      // Case 2: Authorized ADMIN can update post status (including security custody transitions)
       allow update: if isAuthenticated()
-                    && resource.data.ownerUid == request.auth.uid
-                    && request.resource.data.ownerUid == resource.data.ownerUid
-                    && request.resource.data.createdAt == resource.data.createdAt
-                    && (request.resource.data.status == 'OPEN' ||
-                        request.resource.data.status == 'PENDING' ||
-                        request.resource.data.status == 'RESOLVED' ||
-                        request.resource.data.status == 'CLOSED')
-                    && (request.resource.data.type == 'LOST' || request.resource.data.type == 'FOUND')
-                    && request.resource.data.keys().hasOnly([
-                         'ownerUid', 'type', 'title', 'description',
-                         'category', 'location', 'imageUrl', 'imagePublicId',
-                         'status', 'createdAt', 'updatedAt'
-                       ]);
+                    && (
+                      // Normal Owner Update
+                      (resource.data.ownerUid == request.auth.uid
+                       && request.resource.data.ownerUid == resource.data.ownerUid
+                       && request.resource.data.createdAt == resource.data.createdAt
+                       && (request.resource.data.status == 'OPEN' ||
+                           request.resource.data.status == 'PENDING' ||
+                           request.resource.data.status == 'RESOLVED' ||
+                           request.resource.data.status == 'CLOSED')
+                       && (request.resource.data.type == 'LOST' || request.resource.data.type == 'FOUND')
+                       && request.resource.data.keys().hasOnly([
+                            'ownerUid', 'type', 'title', 'description',
+                            'category', 'location', 'imageUrl', 'imagePublicId',
+                            'status', 'createdAt', 'updatedAt'
+                          ]))
+                      ||
+                      // Admin Case Custody / Status Update
+                      (isAdmin()
+                       && request.resource.data.ownerUid == resource.data.ownerUid
+                       && request.resource.data.createdAt == resource.data.createdAt
+                       && request.resource.data.status in [
+                            'OPEN', 'PENDING', 'AWAITING_SECURITY_HANDOVER',
+                            'WITH_SECURITY', 'AWAITING_OWNER_COLLECTION',
+                            'RETURNED_TO_OWNER', 'RESOLVED', 'CLOSED'
+                          ])
+                    );
 
-      // Only the post owner can delete their post
+      // Post owner or Admin can delete post
       allow delete: if isAuthenticated()
-                    && resource.data.ownerUid == request.auth.uid;
+                    && (resource.data.ownerUid == request.auth.uid || isAdmin());
     }
 
     // =========================================================================
@@ -88,10 +110,11 @@ service cloud.firestore {
     // Deterministic ID format: "${postId}_${requesterUid}" prevents duplicates.
     // =========================================================================
     match /requests/{requestId} {
-      // Requesters can read their own requests; post owners can read requests for their posts
+      // Requesters can read their own requests; post owners can read requests for their posts; Admins can review all
       allow read: if isAuthenticated() &&
                     (resource.data.requesterUid == request.auth.uid ||
-                     resource.data.postOwnerUid == request.auth.uid);
+                     resource.data.postOwnerUid == request.auth.uid ||
+                     isAdmin());
 
       // Authenticated users can submit a request immediately without admin approval
       allow create: if isAuthenticated()
@@ -107,7 +130,10 @@ service cloud.firestore {
                          'requesterPhotoUrl', 'message', 'status', 'createdAt', 'updatedAt'
                        ]);
 
-      // Updates: Post owners can ACCEPT/REJECT; Requesters can CANCEL pending requests
+      // Updates:
+      // Case 1: Post owner accepts or rejects
+      // Case 2: Requester cancels their pending request
+      // Case 3: Admin override
       allow update: if isAuthenticated()
                     && request.resource.data.postId == resource.data.postId
                     && request.resource.data.requesterUid == resource.data.requesterUid
@@ -118,23 +144,80 @@ service cloud.firestore {
                          'requesterPhotoUrl', 'message', 'status', 'createdAt', 'updatedAt'
                        ])
                     && (
-                      // Case 1: Post owner accepts or rejects
                       (request.auth.uid == resource.data.postOwnerUid &&
                        (request.resource.data.status == 'ACCEPTED' || request.resource.data.status == 'REJECTED') &&
                        request.resource.data.message == resource.data.message &&
                        request.resource.data.requesterName == resource.data.requesterName &&
                        request.resource.data.requesterPhotoUrl == resource.data.requesterPhotoUrl)
                       ||
-                      // Case 2: Requester cancels their pending request
                       (request.auth.uid == resource.data.requesterUid &&
                        resource.data.status == 'PENDING' &&
                        request.resource.data.status == 'CANCELLED')
+                      ||
+                      (isAdmin() &&
+                       request.resource.data.status in ['PENDING', 'ACCEPTED', 'REJECTED', 'CANCELLED'])
                     );
 
-      // Only the requester or post owner can delete a request
+      // Requester, post owner, or Admin can delete a request
       allow delete: if isAuthenticated() &&
                     (resource.data.requesterUid == request.auth.uid ||
-                     resource.data.postOwnerUid == request.auth.uid);
+                     resource.data.postOwnerUid == request.auth.uid ||
+                     isAdmin());
+    }
+
+    // =========================================================================
+    // Security Custody Handover Records: /handovers/{handoverId}
+    // Append-friendly physical custody tracking for Security Staff & Admins.
+    // =========================================================================
+    match /handovers/{handoverId} {
+      // Admins can read custody tracking; users involved in the post can read timeline
+      allow read: if isAuthenticated() && (
+        isAdmin() ||
+        (resource.data.actorUid == request.auth.uid) ||
+        (resource.data.verifiedOwnerUid == request.auth.uid)
+      );
+
+      // Only authorized Admins can record custody transitions (receipt into custody or return to owner)
+      allow create: if isAdmin()
+                    && request.resource.data.postId is string
+                    && request.resource.data.type in ['RECEIPT', 'RETURN']
+                    && request.resource.data.staffName is string
+                    && request.resource.data.staffName.size() > 0
+                    && request.resource.data.actorUid == request.auth.uid
+                    && request.resource.data.timestamp == request.time
+                    && request.resource.data.createdAt == request.time;
+
+      // Allow admin corrections with audit fields; normal users cannot update
+      allow update: if isAdmin()
+                    && request.resource.data.postId == resource.data.postId
+                    && request.resource.data.createdAt == resource.data.createdAt;
+
+      // Custody records must never be deleted
+      allow delete: if false;
+    }
+
+    // =========================================================================
+    // Audit Logs: /auditLogs/{logId}
+    // Append-only history of privileged actions (status changes, overrides, returns).
+    // =========================================================================
+    match /auditLogs/{logId} {
+      // Only authorized Admins can inspect audit history
+      allow read: if isAdmin();
+
+      // Only authorized Admins can write audit entries
+      allow create: if isAdmin()
+                    && request.resource.data.actorUid == request.auth.uid
+                    && request.resource.data.action in [
+                         'STATUS_CHANGE', 'SECURITY_RECEIPT', 'OWNER_RETURN',
+                         'REQUEST_OVERRIDE', 'POST_DELETE'
+                       ]
+                    && request.resource.data.reason is string
+                    && request.resource.data.reason.size() > 0
+                    && request.resource.data.createdAt == request.time;
+
+      // Audit logs are strictly immutable: cannot be edited or deleted
+      allow update: if false;
+      allow delete: if false;
     }
 
     // Default deny for all other collections

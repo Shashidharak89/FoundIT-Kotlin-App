@@ -37,8 +37,24 @@ sealed class Screen(
         icon = FoundITIcons.Account
     )
 
+    data object AdminPanel : Screen(
+        route = "admin_panel",
+        title = "Admin Panel",
+        subtitle = "Security & case management",
+        icon = FoundITIcons.Shield
+    )
+
     companion object {
         val sidebarItems: List<Screen>
             get() = listOf(Home, CreatePost, MyPosts, MyAccount)
+
+        fun getSidebarItemsForRole(role: String?): List<Screen> {
+            return if (role.equals("ADMIN", ignoreCase = true)) {
+                listOf(Home, CreatePost, MyPosts, MyAccount, AdminPanel)
+            } else {
+                listOf(Home, CreatePost, MyPosts, MyAccount)
+            }
+        }
     }
 }
+

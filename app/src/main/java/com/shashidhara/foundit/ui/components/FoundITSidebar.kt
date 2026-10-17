@@ -169,8 +169,8 @@ fun FoundITSidebar(
                     modifier = Modifier.padding(start = 4.dp, bottom = 10.dp)
                 )
 
-                // Navigation Items: Home and My Account
-                Screen.sidebarItems.forEach { screen ->
+                // Navigation Items: Filtered securely by role
+                Screen.getSidebarItemsForRole(userProfile?.role).forEach { screen ->
                     val isSelected = currentScreen.route == screen.route
 
                     val backgroundColor by animateColorAsState(
