@@ -1,5 +1,6 @@
 package com.shashidhara.foundit.ui.components
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -22,9 +23,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.shashidhara.foundit.R
 import com.shashidhara.foundit.ui.navigation.Screen
 import com.shashidhara.foundit.ui.theme.AquaFoamBase
 import com.shashidhara.foundit.ui.theme.AquaFoamLighter
@@ -93,25 +97,14 @@ fun FoundITTopBar(
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Box(
+                    Image(
+                        painter = painterResource(id = R.drawable.foundit_logo),
+                        contentDescription = "FoundIT Logo",
+                        contentScale = ContentScale.Fit,
                         modifier = Modifier
-                            .size(34.dp)
+                            .size(36.dp)
                             .clip(RoundedCornerShape(10.dp))
-                            .background(
-                                Brush.linearGradient(
-                                    colors = listOf(CyberTealLight, CyberTealBase)
-                                )
-                            )
-                            .border(1.dp, AquaFoamBase.copy(alpha = 0.5f), RoundedCornerShape(10.dp)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = FoundITIcons.Radar,
-                            contentDescription = "FoundIT Radar",
-                            tint = AquaFoamLighter,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
+                    )
 
                     Spacer(modifier = Modifier.width(10.dp))
 

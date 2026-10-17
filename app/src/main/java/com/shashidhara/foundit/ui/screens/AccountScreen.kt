@@ -58,6 +58,8 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import com.shashidhara.foundit.R
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.SubcomposeAsyncImage
 import com.shashidhara.foundit.data.repository.AuthState
@@ -156,6 +158,13 @@ fun AccountScreen(
                                         color = AquaFoamLighter
                                     )
                                 }
+                            )
+                        } else if (currentProfile == null) {
+                            Image(
+                                painter = painterResource(id = R.drawable.foundit_logo),
+                                contentDescription = "FoundIT Logo",
+                                contentScale = ContentScale.Fit,
+                                modifier = Modifier.size(52.dp)
                             )
                         } else {
                             Text(

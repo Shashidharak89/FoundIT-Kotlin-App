@@ -1,6 +1,7 @@
 package com.shashidhara.foundit.ui.components
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -31,10 +32,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.SubcomposeAsyncImage
+import com.shashidhara.foundit.R
 import com.shashidhara.foundit.data.model.UserProfile
 import com.shashidhara.foundit.ui.navigation.Screen
 import com.shashidhara.foundit.ui.theme.AquaFoamBase
@@ -101,25 +104,14 @@ fun FoundITSidebar(
                 ) {
                     // Logo + Branding
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
+                        Image(
+                            painter = painterResource(id = R.drawable.foundit_logo),
+                            contentDescription = "FoundIT Logo",
+                            contentScale = ContentScale.Fit,
                             modifier = Modifier
-                                .size(42.dp)
+                                .size(44.dp)
                                 .clip(RoundedCornerShape(12.dp))
-                                .background(
-                                    Brush.linearGradient(
-                                        colors = listOf(CyberTealLight, CyberTealBase)
-                                    )
-                                )
-                                .border(1.dp, AquaFoamBase, RoundedCornerShape(12.dp)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = FoundITIcons.Radar,
-                                contentDescription = "FoundIT Logo",
-                                tint = AquaFoamLighter,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
+                        )
 
                         Spacer(modifier = Modifier.width(12.dp))
 

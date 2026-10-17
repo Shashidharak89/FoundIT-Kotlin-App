@@ -1,5 +1,6 @@
 package com.shashidhara.foundit.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -43,9 +44,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.shashidhara.foundit.R
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.SubcomposeAsyncImage
@@ -193,28 +196,45 @@ fun HomeScreen(
                         .padding(20.dp)
                 ) {
                     Column {
-                        // Badge
+                        // Landing Page Header: Badge + Brand Logo
                         Row(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(20.dp))
-                                .background(CyberTealMuted)
-                                .border(1.dp, AquaFoamBase.copy(alpha = 0.4f), RoundedCornerShape(20.dp))
-                                .padding(horizontal = 10.dp, vertical = 4.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Box(
+                            // Badge
+                            Row(
                                 modifier = Modifier
-                                    .size(6.dp)
-                                    .clip(CircleShape)
-                                    .background(AquaFoamBase)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "COMMUNITY RECOVERY ACTIVE",
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = AquaFoamLighter,
-                                letterSpacing = 1.sp
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(CyberTealMuted)
+                                    .border(1.dp, AquaFoamBase.copy(alpha = 0.4f), RoundedCornerShape(20.dp))
+                                    .padding(horizontal = 10.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(6.dp)
+                                        .clip(CircleShape)
+                                        .background(AquaFoamBase)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "COMMUNITY RECOVERY ACTIVE",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = AquaFoamLighter,
+                                    letterSpacing = 1.sp
+                                )
+                            }
+
+                            // Landing Page Logo
+                            Image(
+                                painter = painterResource(id = R.drawable.foundit_logo),
+                                contentDescription = "FoundIT Logo",
+                                contentScale = ContentScale.Fit,
+                                modifier = Modifier
+                                    .size(46.dp)
+                                    .clip(RoundedCornerShape(10.dp))
                             )
                         }
 
