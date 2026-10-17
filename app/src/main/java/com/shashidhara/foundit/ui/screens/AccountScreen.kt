@@ -65,7 +65,8 @@ import com.shashidhara.foundit.ui.viewmodel.AuthViewModel
 @Composable
 fun AccountScreen(
     modifier: Modifier = Modifier,
-    authViewModel: AuthViewModel = viewModel()
+    authViewModel: AuthViewModel = viewModel(),
+    onNavigateToMyPosts: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val authState by authViewModel.authState.collectAsState()
@@ -222,6 +223,67 @@ fun AccountScreen(
                             modifier = Modifier.weight(1f)
                         )
                     }
+                }
+            }
+        }
+
+        // Quick Navigation to My Posts & Requests Dashboard
+        item {
+            Spacer(modifier = Modifier.height(14.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(ColorPureWhite)
+                    .border(1.dp, AppBorderLight, RoundedCornerShape(16.dp))
+                    .clickable { onNavigateToMyPosts() }
+                    .padding(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(BrandMintBg)
+                                .border(1.dp, BrandMintBase, RoundedCornerShape(10.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = FoundITIcons.Schedule,
+                                contentDescription = null,
+                                tint = BrandTealBase,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(14.dp))
+
+                        Column {
+                            Text(
+                                text = "My Posts & Requests",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = TextPrimaryDark
+                            )
+                            Text(
+                                text = "Manage your posts & review incoming claims",
+                                fontSize = 11.sp,
+                                color = TextSecondarySlate
+                            )
+                        }
+                    }
+
+                    Icon(
+                        imageVector = FoundITIcons.ChevronRight,
+                        contentDescription = null,
+                        tint = TextMutedSlate,
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
             }
         }

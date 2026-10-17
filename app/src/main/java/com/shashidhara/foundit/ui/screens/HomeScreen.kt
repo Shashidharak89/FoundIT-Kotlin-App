@@ -1,5 +1,6 @@
 package com.shashidhara.foundit.ui.screens
 
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -46,6 +47,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -56,16 +58,16 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.SubcomposeAsyncImage
 import com.shashidhara.foundit.R
 import com.shashidhara.foundit.data.model.PostItem
+import com.shashidhara.foundit.data.model.PostRequest
+import com.shashidhara.foundit.data.model.UserProfile
 import com.shashidhara.foundit.ui.components.FoundITIcons
 import com.shashidhara.foundit.ui.components.FoundITVideoPlayer
 import com.shashidhara.foundit.ui.theme.AppBackgroundWhite
 import com.shashidhara.foundit.ui.theme.AppBorderLight
 import com.shashidhara.foundit.ui.theme.AppSurfaceSubtle
-import com.shashidhara.foundit.ui.theme.AppSurfaceWhite
 import com.shashidhara.foundit.ui.theme.BrandMintBase
 import com.shashidhara.foundit.ui.theme.BrandMintBg
 import com.shashidhara.foundit.ui.theme.BrandTealBase
-import com.shashidhara.foundit.ui.theme.BrandTealDark
 import com.shashidhara.foundit.ui.theme.ColorPureWhite
 import com.shashidhara.foundit.ui.theme.TextMutedSlate
 import com.shashidhara.foundit.ui.theme.TextPrimaryDark
@@ -76,10 +78,16 @@ import com.shashidhara.foundit.ui.viewmodel.PostViewModel
 fun HomeScreen(
     modifier: Modifier = Modifier,
     postViewModel: PostViewModel = viewModel(),
+    currentUser: UserProfile? = null,
     onNavigateToCreatePost: (String) -> Unit = {},
     onNavigateToAccount: () -> Unit = {}
 ) {
+    val context = LocalContext.current
     val feedState by postViewModel.feedUiState.collectAsState()
+    val currentRequest by postViewModel.currentPostRequest.collectAsState()
+    val isSubmittingRequest by postViewModel.isSubmittingRequest.collectAsState()
+    val requestFeedback by postViewModel.requestFeedback.collectAsState()
+
     var selectedPostForDetails by remember { mutableStateOf<PostItem?>(null) }
     val listState = rememberLazyListState()
 
@@ -99,6 +107,19 @@ fun HomeScreen(
     LaunchedEffect(shouldLoadMore) {
         if (shouldLoadMore && feedState.hasMore && !feedState.isLoading && !feedState.isLoadingMore) {
             postViewModel.loadNextPage()
+        }
+    }
+
+    LaunchedEffect(selectedPostForDetails) {
+        val post = selectedPostForDetails
+        if (post != null && currentUser != null) {
+            postViewModel.checkUserRequestForPost(post.id, currentUser.uid)
+        }
+    }
+
+    LaunchedEffect(requestFeedback) {
+        requestFeedback?.let {
+            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -285,13 +306,42 @@ fun HomeScreen(
                 }
             }
 
+            // Post Type Filter Chips: ALL / LOST / FOUND
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    listOf("ALL" to "All Items", "LOST" to "Lost Items", "FOUND" to "Found Items").forEach { (typeKey, label) ->
+                        val isSelected = feedState.selectedType == typeKey
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(if (isSelected) BrandTealBase else ColorPureWhite)
+                                .border(1.dp, if (isSelected) BrandTealBase else AppBorderLight, RoundedCornerShape(14.dp))
+                                .clickable { postViewModel.onTypeFilterChanged(typeKey) }
+                                .padding(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Text(
+                                text = label,
+                                fontSize = 11.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                color = if (isSelected) ColorPureWhite else TextSecondarySlate
+                            )
+                        }
+                    }
+                }
+            }
+
             // Horizontal Category Filter Pills (Minimalist Black & White + Accent Selection)
             item {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .horizontalScroll(rememberScrollState())
-                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     categories.forEach { category ->
@@ -299,20 +349,20 @@ fun HomeScreen(
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(20.dp))
-                                .background(if (isSelected) BrandTealBase else ColorPureWhite)
+                                .background(if (isSelected) AppSurfaceSubtle else ColorPureWhite)
                                 .border(
                                     1.dp,
                                     if (isSelected) BrandTealBase else AppBorderLight,
                                     RoundedCornerShape(20.dp)
                                 )
                                 .clickable { postViewModel.onCategorySelected(category) }
-                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                                .padding(horizontal = 14.dp, vertical = 8.dp)
                         ) {
                             Text(
                                 text = category,
-                                fontSize = 13.sp,
+                                fontSize = 12.sp,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                color = if (isSelected) ColorPureWhite else TextSecondarySlate
+                                color = if (isSelected) BrandTealBase else TextSecondarySlate
                             )
                         }
                     }
@@ -447,7 +497,7 @@ fun HomeScreen(
                     }
                 }
             } else if (!feedState.isLoading) {
-                // Empty State (Zero Dummy Data, Clean Minimalist Container)
+                // Empty State
                 item {
                     Box(
                         modifier = Modifier
@@ -497,7 +547,7 @@ fun HomeScreen(
                                 text = if (isAuthRequired) {
                                     "Sign in with Google to explore real-time lost and found items reported in your community."
                                 } else if (feedState.searchQuery.isNotBlank()) {
-                                    "No posts match \"${feedState.searchQuery}\" in category \"${feedState.selectedCategory}\". Try another keyword."
+                                    "No posts match \"${feedState.searchQuery}\". Try another keyword or filter."
                                 } else {
                                     "Be the first to publish a lost or found report to help the community."
                                 },
@@ -562,7 +612,7 @@ fun HomeScreen(
             }
         }
 
-        // Floating Action Button to Report Item (Selective Brand Accent)
+        // Floating Action Button to Report Item
         FloatingActionButton(
             onClick = { onNavigateToCreatePost("LOST") },
             containerColor = BrandTealBase,
@@ -592,11 +642,31 @@ fun HomeScreen(
             }
         }
 
-        // Post Details Modal Dialog with ExoPlayer video playback or image viewer
+        // Post Details Modal Dialog with ExoPlayer video playback or image viewer and Response Flow
         selectedPostForDetails?.let { post ->
             PostDetailsDialog(
                 post = post,
-                onDismiss = { selectedPostForDetails = null }
+                currentUser = currentUser,
+                currentRequest = currentRequest,
+                isSubmittingRequest = isSubmittingRequest,
+                onDismiss = {
+                    selectedPostForDetails = null
+                    postViewModel.clearRequestFeedback()
+                },
+                onNavigateToSignIn = onNavigateToAccount,
+                onSubmitRequest = { message ->
+                    if (currentUser != null) {
+                        postViewModel.submitPostRequest(
+                            postId = post.id,
+                            postOwnerUid = post.ownerUid,
+                            currentUser = currentUser,
+                            message = message,
+                            onSuccess = {
+                                postViewModel.checkUserRequestForPost(post.id, currentUser.uid)
+                            }
+                        )
+                    }
+                }
             )
         }
     }
@@ -773,15 +843,25 @@ private fun PostItemCard(
 }
 
 /**
- * Detailed Dialog displaying high-res Cloudinary photo or interactive ExoPlayer video player.
+ * Detailed Dialog displaying high-res Cloudinary photo or interactive ExoPlayer video player,
+ * with full Response / Claim Request flow.
  */
 @Composable
 private fun PostDetailsDialog(
     post: PostItem,
-    onDismiss: () -> Unit
+    currentUser: UserProfile?,
+    currentRequest: PostRequest?,
+    isSubmittingRequest: Boolean,
+    onDismiss: () -> Unit,
+    onNavigateToSignIn: () -> Unit,
+    onSubmitRequest: (message: String) -> Unit
 ) {
     val isFound = post.postType.equals("FOUND", ignoreCase = true)
     val mediaUrl = post.displayMediaUrl
+    val isOwner = currentUser?.uid == post.ownerUid
+
+    var requestMessage by remember { mutableStateOf("") }
+    var isWritingResponse by remember { mutableStateOf(false) }
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
@@ -792,225 +872,395 @@ private fun PostDetailsDialog(
                 .padding(vertical = 16.dp)
                 .border(1.dp, AppBorderLight, RoundedCornerShape(20.dp))
         ) {
-            Column(
+            LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(20.dp)
             ) {
                 // Top Header with Close
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Status Badge
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(if (isFound) BrandMintBg else AppSurfaceSubtle)
-                            .border(1.dp, if (isFound) BrandMintBase else AppBorderLight, RoundedCornerShape(8.dp))
-                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = if (isFound) "FOUND ITEM" else "LOST REPORT",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = if (isFound) BrandTealBase else TextPrimaryDark
+                        // Status Badge
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (isFound) BrandMintBg else AppSurfaceSubtle)
+                                .border(1.dp, if (isFound) BrandMintBase else AppBorderLight, RoundedCornerShape(8.dp))
+                                .padding(horizontal = 10.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = "${post.status.uppercase()} • ${if (isFound) "FOUND" else "LOST"}",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isFound) BrandTealBase else TextPrimaryDark
+                            )
+                        }
+
+                        Icon(
+                            imageVector = FoundITIcons.Close,
+                            contentDescription = "Close",
+                            tint = TextSecondarySlate,
+                            modifier = Modifier
+                                .size(22.dp)
+                                .clip(CircleShape)
+                                .clickable { onDismiss() }
                         )
                     }
 
-                    Icon(
-                        imageVector = FoundITIcons.Close,
-                        contentDescription = "Close",
-                        tint = TextSecondarySlate,
-                        modifier = Modifier
-                            .size(22.dp)
-                            .clip(CircleShape)
-                            .clickable { onDismiss() }
-                    )
+                    Spacer(modifier = Modifier.height(14.dp))
                 }
 
-                Spacer(modifier = Modifier.height(14.dp))
-
                 // High-Res Media Container (ExoPlayer for Video or AsyncImage for Photo)
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(210.dp)
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(AppSurfaceSubtle)
-                        .border(1.dp, AppBorderLight, RoundedCornerShape(14.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (mediaUrl.isNotBlank()) {
-                        if (post.isVideo) {
-                            FoundITVideoPlayer(
-                                videoUrl = mediaUrl,
-                                modifier = Modifier.fillMaxSize(),
-                                autoPlay = true,
-                                useController = true
-                            )
-                        } else {
-                            SubcomposeAsyncImage(
-                                model = mediaUrl,
-                                contentDescription = post.title,
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier.fillMaxSize(),
-                                loading = {
-                                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                        CircularProgressIndicator(
-                                            color = BrandTealBase,
-                                            strokeWidth = 2.dp,
-                                            modifier = Modifier.size(24.dp)
-                                        )
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(AppSurfaceSubtle)
+                            .border(1.dp, AppBorderLight, RoundedCornerShape(14.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (mediaUrl.isNotBlank()) {
+                            if (post.isVideo) {
+                                FoundITVideoPlayer(
+                                    videoUrl = mediaUrl,
+                                    modifier = Modifier.fillMaxSize(),
+                                    autoPlay = true,
+                                    useController = true
+                                )
+                            } else {
+                                SubcomposeAsyncImage(
+                                    model = mediaUrl,
+                                    contentDescription = post.title,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize(),
+                                    loading = {
+                                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                            CircularProgressIndicator(
+                                                color = BrandTealBase,
+                                                strokeWidth = 2.dp,
+                                                modifier = Modifier.size(24.dp)
+                                            )
+                                        }
+                                    },
+                                    error = {
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Icon(
+                                                imageVector = FoundITIcons.MediaImage,
+                                                contentDescription = null,
+                                                tint = TextMutedSlate,
+                                                modifier = Modifier.size(36.dp)
+                                            )
+                                            Spacer(modifier = Modifier.height(6.dp))
+                                            Text(
+                                                text = "Failed to load media",
+                                                fontSize = 12.sp,
+                                                color = TextSecondarySlate
+                                            )
+                                        }
                                     }
-                                },
-                                error = {
-                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Icon(
-                                            imageVector = FoundITIcons.MediaImage,
-                                            contentDescription = null,
-                                            tint = TextMutedSlate,
-                                            modifier = Modifier.size(36.dp)
-                                        )
-                                        Spacer(modifier = Modifier.height(6.dp))
+                                )
+                            }
+                        } else {
+                            Icon(
+                                imageVector = FoundITIcons.MediaImage,
+                                contentDescription = null,
+                                tint = BrandTealBase,
+                                modifier = Modifier.size(48.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+                }
+
+                // Title and Location
+                item {
+                    Text(
+                        text = post.title,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = TextPrimaryDark
+                    )
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = FoundITIcons.Location,
+                            contentDescription = "Location",
+                            tint = BrandTealBase,
+                            modifier = Modifier.size(15.dp)
+                        )
+                        Spacer(modifier = Modifier.width(5.dp))
+                        Text(
+                            text = post.location,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = TextSecondarySlate
+                        )
+                    }
+
+                    if (post.description.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = post.description,
+                            fontSize = 12.sp,
+                            color = TextSecondarySlate,
+                            lineHeight = 17.sp
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+
+                // Category and Reporter Row
+                item {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(AppSurfaceSubtle)
+                            .padding(10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column {
+                            Text(text = "Category", fontSize = 10.sp, color = TextMutedSlate)
+                            Text(text = post.category, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextPrimaryDark)
+                        }
+
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(text = "Reported By", fontSize = 10.sp, color = TextMutedSlate)
+                            Text(
+                                text = if (isOwner) "You" else post.authorName,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isOwner) BrandTealBase else TextPrimaryDark
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+
+                // --- Request / Response Action Section ---
+                item {
+                    if (currentUser == null) {
+                        // Unauthenticated prompt
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(AppSurfaceSubtle)
+                                .border(1.dp, AppBorderLight, RoundedCornerShape(12.dp))
+                                .padding(14.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = "Sign in to Respond to this Post",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = TextPrimaryDark
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Button(
+                                    onClick = onNavigateToSignIn,
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = BrandTealBase,
+                                        contentColor = ColorPureWhite
+                                    )
+                                ) {
+                                    Text("Sign In with Google", fontSize = 12.sp)
+                                }
+                            }
+                        }
+                    } else if (isOwner) {
+                        // User is owner
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(BrandMintBg)
+                                .border(1.dp, BrandMintBase.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
+                                .padding(10.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "You are the creator of this post. Check 'My Posts' to manage requests.",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = BrandTealBase,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    } else if (currentRequest != null) {
+                        // User already requested
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(AppSurfaceSubtle)
+                                .border(1.dp, AppBorderLight, RoundedCornerShape(12.dp))
+                                .padding(12.dp)
+                        ) {
+                            Column {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "Your Request Status:",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = TextPrimaryDark
+                                    )
+
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(6.dp))
+                                            .background(
+                                                when (currentRequest.status) {
+                                                    PostRequest.STATUS_ACCEPTED -> Color(0xFFDCFCE7)
+                                                    PostRequest.STATUS_REJECTED -> Color(0xFFFEE2E2)
+                                                    else -> BrandMintBg
+                                                }
+                                            )
+                                            .padding(horizontal = 8.dp, vertical = 2.dp)
+                                    ) {
                                         Text(
-                                            text = "Failed to load media",
-                                            fontSize = 12.sp,
-                                            color = TextSecondarySlate
+                                            text = currentRequest.status,
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = when (currentRequest.status) {
+                                                PostRequest.STATUS_ACCEPTED -> Color(0xFF166534)
+                                                PostRequest.STATUS_REJECTED -> Color(0xFF991B1B)
+                                                else -> BrandTealBase
+                                            }
                                         )
                                     }
                                 }
+
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = "\"${currentRequest.message}\"",
+                                    fontSize = 12.sp,
+                                    color = TextSecondarySlate
+                                )
+                            }
+                        }
+                    } else if (post.status.uppercase() != "OPEN") {
+                        // Post is closed / resolved
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(AppSurfaceSubtle)
+                                .padding(10.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "This post is currently ${post.status.uppercase()} and is no longer accepting new responses.",
+                                fontSize = 12.sp,
+                                color = TextMutedSlate,
+                                textAlign = TextAlign.Center
                             )
                         }
                     } else {
-                        Icon(
-                            imageVector = FoundITIcons.MediaImage,
-                            contentDescription = null,
-                            tint = BrandTealBase,
-                            modifier = Modifier.size(48.dp)
-                        )
-                    }
-                }
+                        // Eligible to submit request
+                        if (!isWritingResponse) {
+                            Button(
+                                onClick = { isWritingResponse = true },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(46.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = BrandTealBase,
+                                    contentColor = ColorPureWhite
+                                )
+                            ) {
+                                Text(
+                                    text = if (isFound) "Claim This Item" else "I Found This Item",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        } else {
+                            Column {
+                                OutlinedTextField(
+                                    value = requestMessage,
+                                    onValueChange = { requestMessage = it },
+                                    placeholder = {
+                                        Text(
+                                            text = if (isFound) "Describe proof of ownership or identifiable marks..." else "Provide details on where and how you found this item...",
+                                            fontSize = 12.sp,
+                                            color = TextMutedSlate
+                                        )
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp),
+                                    minLines = 3,
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = BrandTealBase,
+                                        unfocusedBorderColor = AppBorderLight
+                                    )
+                                )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                                Spacer(modifier = Modifier.height(10.dp))
 
-                // Title
-                Text(
-                    text = post.title,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = TextPrimaryDark
-                )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.End
+                                ) {
+                                    Button(
+                                        onClick = { isWritingResponse = false },
+                                        shape = RoundedCornerShape(10.dp),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = AppSurfaceSubtle,
+                                            contentColor = TextSecondarySlate
+                                        )
+                                    ) {
+                                        Text("Cancel", fontSize = 12.sp)
+                                    }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
 
-                // Location Row
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = FoundITIcons.Location,
-                        contentDescription = "Location",
-                        tint = BrandTealBase,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = post.location,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = TextSecondarySlate
-                    )
-                }
-
-                // Description (if present)
-                if (post.description.isNotBlank()) {
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Text(
-                        text = post.description,
-                        fontSize = 12.sp,
-                        color = TextSecondarySlate,
-                        lineHeight = 17.sp
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                // Metadata Footer: Category & Verified Cloudinary Media
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(AppSurfaceSubtle)
-                            .border(1.dp, AppBorderLight, RoundedCornerShape(8.dp))
-                            .padding(horizontal = 8.dp, vertical = 3.dp)
-                    ) {
-                        Text(
-                            text = post.category,
-                            fontSize = 11.sp,
-                            color = BrandTealBase,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(6.dp)
-                                .clip(CircleShape)
-                                .background(BrandMintBase)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "Cloudinary Verified",
-                            fontSize = 10.sp,
-                            color = TextMutedSlate
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(18.dp))
-
-                // Reporter profile row
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(AppSurfaceSubtle)
-                        .border(1.dp, AppBorderLight, RoundedCornerShape(12.dp))
-                        .padding(10.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(32.dp)
-                            .clip(CircleShape)
-                            .background(BrandTealBase),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = post.authorName.take(1).uppercase().ifBlank { "U" },
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = ColorPureWhite
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Column {
-                        Text(
-                            text = "Reported by ${post.authorName.ifBlank { "Community Member" }}",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = TextPrimaryDark
-                        )
-                        Text(
-                            text = "FoundIT Community Network",
-                            fontSize = 10.sp,
-                            color = TextMutedSlate
-                        )
+                                    Button(
+                                        onClick = {
+                                            if (requestMessage.isNotBlank()) {
+                                                onSubmitRequest(requestMessage)
+                                                isWritingResponse = false
+                                            }
+                                        },
+                                        enabled = requestMessage.isNotBlank() && !isSubmittingRequest,
+                                        shape = RoundedCornerShape(10.dp),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = BrandTealBase,
+                                            contentColor = ColorPureWhite
+                                        )
+                                    ) {
+                                        if (isSubmittingRequest) {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier.size(16.dp),
+                                                color = ColorPureWhite,
+                                                strokeWidth = 2.dp
+                                            )
+                                        } else {
+                                            Text("Send Response", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }

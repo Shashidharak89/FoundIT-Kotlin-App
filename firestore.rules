@@ -11,20 +11,22 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
-    // User profiles collection
+    // =========================================================================
+    // User Profiles Collection: /users/{userId}
+    // =========================================================================
     match /users/{userId} {
-      // Authenticated users can read user profiles
+      // Authenticated users can read member profiles
       allow read: if isAuthenticated();
 
       // Only the user themselves can create their profile document
-      // Newly created profiles MUST have role == 'USER' and matching uid
+      // Role is restricted to 'USER' on client creation
       allow create: if isOwner(userId)
                     && request.resource.data.uid == userId
                     && request.resource.data.role == 'USER'
                     && request.resource.data.createdAt == request.time;
 
       // Users can update their profile information (name, photoUrl),
-      // but CANNOT change their role, createdAt timestamp, or uid
+      // but cannot change role, createdAt, or uid
       allow update: if isOwner(userId)
                     && request.resource.data.uid == resource.data.uid
                     && request.resource.data.role == resource.data.role
@@ -34,12 +36,14 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // Community Lost & Found posts collection
+    // =========================================================================
+    // Community Lost & Found Posts Collection: /posts/{postId}
+    // =========================================================================
     match /posts/{postId} {
       // Authenticated users can read community posts
       allow read: if isAuthenticated();
 
-      // Authenticated users can create posts matching the strict 10-field schema
+      // Authenticated users can create posts matching the approved schema
       allow create: if isAuthenticated()
                     && request.resource.data.ownerUid == request.auth.uid
                     && (request.resource.data.type == 'LOST' || request.resource.data.type == 'FOUND')
@@ -55,18 +59,82 @@ service cloud.firestore {
                     && request.resource.data.keys().hasOnly([
                          'ownerUid', 'type', 'title', 'description',
                          'category', 'location', 'imageUrl', 'imagePublicId',
-                         'status', 'createdAt'
+                         'status', 'createdAt', 'updatedAt'
                        ]);
 
-      // Only the post owner can update their post without altering ownerUid or createdAt
+      // Only post owner can update their post without altering ownerUid or createdAt
       allow update: if isAuthenticated()
                     && resource.data.ownerUid == request.auth.uid
                     && request.resource.data.ownerUid == resource.data.ownerUid
-                    && request.resource.data.createdAt == resource.data.createdAt;
+                    && request.resource.data.createdAt == resource.data.createdAt
+                    && (request.resource.data.status == 'OPEN' ||
+                        request.resource.data.status == 'PENDING' ||
+                        request.resource.data.status == 'RESOLVED' ||
+                        request.resource.data.status == 'CLOSED')
+                    && (request.resource.data.type == 'LOST' || request.resource.data.type == 'FOUND')
+                    && request.resource.data.keys().hasOnly([
+                         'ownerUid', 'type', 'title', 'description',
+                         'category', 'location', 'imageUrl', 'imagePublicId',
+                         'status', 'createdAt', 'updatedAt'
+                       ]);
 
       // Only the post owner can delete their post
       allow delete: if isAuthenticated()
                     && resource.data.ownerUid == request.auth.uid;
+    }
+
+    // =========================================================================
+    // Requests Collection: /requests/{requestId}
+    // Deterministic ID format: "${postId}_${requesterUid}" prevents duplicates.
+    // =========================================================================
+    match /requests/{requestId} {
+      // Requesters can read their own requests; post owners can read requests for their posts
+      allow read: if isAuthenticated() &&
+                    (resource.data.requesterUid == request.auth.uid ||
+                     resource.data.postOwnerUid == request.auth.uid);
+
+      // Authenticated users can submit a request immediately without admin approval
+      allow create: if isAuthenticated()
+                    && requestId == request.resource.data.postId + '_' + request.auth.uid
+                    && request.resource.data.requesterUid == request.auth.uid
+                    && request.resource.data.postOwnerUid != request.auth.uid
+                    && request.resource.data.status == 'PENDING'
+                    && request.resource.data.createdAt == request.time
+                    && request.resource.data.message is string
+                    && request.resource.data.message.size() > 0
+                    && request.resource.data.keys().hasOnly([
+                         'postId', 'postOwnerUid', 'requesterUid', 'requesterName',
+                         'requesterPhotoUrl', 'message', 'status', 'createdAt', 'updatedAt'
+                       ]);
+
+      // Updates: Post owners can ACCEPT/REJECT; Requesters can CANCEL pending requests
+      allow update: if isAuthenticated()
+                    && request.resource.data.postId == resource.data.postId
+                    && request.resource.data.requesterUid == resource.data.requesterUid
+                    && request.resource.data.postOwnerUid == resource.data.postOwnerUid
+                    && request.resource.data.createdAt == resource.data.createdAt
+                    && request.resource.data.keys().hasOnly([
+                         'postId', 'postOwnerUid', 'requesterUid', 'requesterName',
+                         'requesterPhotoUrl', 'message', 'status', 'createdAt', 'updatedAt'
+                       ])
+                    && (
+                      // Case 1: Post owner accepts or rejects
+                      (request.auth.uid == resource.data.postOwnerUid &&
+                       (request.resource.data.status == 'ACCEPTED' || request.resource.data.status == 'REJECTED') &&
+                       request.resource.data.message == resource.data.message &&
+                       request.resource.data.requesterName == resource.data.requesterName &&
+                       request.resource.data.requesterPhotoUrl == resource.data.requesterPhotoUrl)
+                      ||
+                      // Case 2: Requester cancels their pending request
+                      (request.auth.uid == resource.data.requesterUid &&
+                       resource.data.status == 'PENDING' &&
+                       request.resource.data.status == 'CANCELLED')
+                    );
+
+      // Only the requester or post owner can delete a request
+      allow delete: if isAuthenticated() &&
+                    (resource.data.requesterUid == request.auth.uid ||
+                     resource.data.postOwnerUid == request.auth.uid);
     }
 
     // Default deny for all other collections

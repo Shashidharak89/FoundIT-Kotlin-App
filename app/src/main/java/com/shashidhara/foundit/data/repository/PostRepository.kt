@@ -28,17 +28,7 @@ class PostRepository(
     }
 
     /**
-     * Creates a new post document in Firestore strictly containing the 10 allowed fields:
-     * - ownerUid
-     * - type (LOST or FOUND)
-     * - title
-     * - description
-     * - category
-     * - location
-     * - imageUrl
-     * - imagePublicId
-     * - status (OPEN)
-     * - createdAt (FieldValue.serverTimestamp())
+     * Creates a new post document in Firestore strictly conforming to the security rules.
      */
     suspend fun createPost(post: PostItem): Result<String> {
         return try {
@@ -57,7 +47,7 @@ class PostRepository(
 
             Log.d(
                 TAG,
-                "Submitting Firestore post payload: keys=${postData.keys.sorted()}, ownerUid=${post.ownerUid}, type=${post.type}, status=${postData["status"]}"
+                "Submitting Firestore post payload: ownerUid=${post.ownerUid}, type=${post.type}, title=${post.title}"
             )
 
             val docRef = firestore.collection(POSTS_COLLECTION).add(postData).await()
@@ -70,20 +60,71 @@ class PostRepository(
     }
 
     /**
-     * Fetches a paginated page of valid user posts from Firestore.
-     * Supports search optimization and category filtering.
-     * Default request: page = 1, size = 20, search = ""
+     * Updates an existing post. Protected fields (ownerUid, createdAt) are never changed.
+     */
+    suspend fun updatePost(
+        postId: String,
+        title: String,
+        description: String,
+        category: String,
+        location: String,
+        status: String
+    ): Result<Unit> {
+        return try {
+            val updates = hashMapOf<String, Any>(
+                "title" to title.trim(),
+                "description" to description.trim(),
+                "category" to category,
+                "location" to location.trim(),
+                "status" to status,
+                "updatedAt" to FieldValue.serverTimestamp()
+            )
+
+            firestore.collection(POSTS_COLLECTION).document(postId).update(updates).await()
+            Log.d(TAG, "Post $postId updated successfully")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to update post $postId: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Fetches a single post by ID.
+     */
+    suspend fun getPostById(postId: String): Result<PostItem?> {
+        return try {
+            val doc = firestore.collection(POSTS_COLLECTION).document(postId).get().await()
+            if (doc.exists()) {
+                Result.success(parsePost(doc))
+            } else {
+                Result.success(null)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to get post $postId: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Fetches a paginated page of community posts for the Home feed.
+     * Supports search query, category filtering, and Lost/Found type filters.
+     * Uses cursor-based pagination with DocumentSnapshot.
      */
     suspend fun getPostsPaginated(
         page: Int = 1,
         pageSize: Int = DEFAULT_PAGE_SIZE,
         searchQuery: String = "",
         category: String? = null,
+        typeFilter: String? = null, // "ALL", "LOST", "FOUND"
+        statusFilter: String? = "OPEN", // Default to OPEN posts
         lastSnapshot: DocumentSnapshot? = null
     ): Result<PaginatedPosts> {
         return try {
             val cleanQuery = searchQuery.trim()
             val cleanCategory = if (category == "All Items" || category.isNullOrBlank()) null else category
+            val cleanType = if (typeFilter == "ALL" || typeFilter.isNullOrBlank()) null else typeFilter
+            val cleanStatus = if (statusFilter == "ALL" || statusFilter.isNullOrBlank()) null else statusFilter
 
             var query: Query = firestore.collection(POSTS_COLLECTION)
                 .orderBy("createdAt", Query.Direction.DESCENDING)
@@ -92,8 +133,9 @@ class PostRepository(
                 query = query.startAfter(lastSnapshot)
             }
 
-            // Determine fetch limit (if filtering by search/category client-side, fetch buffer)
-            val fetchLimit = if (cleanQuery.isNotBlank() || cleanCategory != null) {
+            // Buffer factor when applying client search/category filters without composite index
+            val needsFiltering = cleanQuery.isNotBlank() || cleanCategory != null || cleanType != null || cleanStatus != null
+            val fetchLimit = if (needsFiltering) {
                 (pageSize * 3).toLong()
             } else {
                 pageSize.toLong()
@@ -103,21 +145,24 @@ class PostRepository(
             val rawDocs = snapshot.documents
             val allPosts = rawDocs.mapNotNull { parsePost(it) }
 
-            // Apply search and category filtering if specified
+            // Filter in-memory for flexible combination
             val filteredPosts = allPosts.filter { post ->
                 val matchesCategory = cleanCategory == null || post.category.equals(cleanCategory, ignoreCase = true)
+                val matchesType = cleanType == null || post.type.equals(cleanType, ignoreCase = true)
+                val matchesStatus = cleanStatus == null || post.status.equals(cleanStatus, ignoreCase = true)
                 val matchesSearch = cleanQuery.isBlank() ||
                         post.title.contains(cleanQuery, ignoreCase = true) ||
                         post.description.contains(cleanQuery, ignoreCase = true) ||
                         post.location.contains(cleanQuery, ignoreCase = true) ||
                         post.type.contains(cleanQuery, ignoreCase = true)
-                matchesCategory && matchesSearch
+
+                matchesCategory && matchesType && matchesStatus && matchesSearch
             }
 
             val newLastDoc = rawDocs.lastOrNull()
             val hasMore = rawDocs.size.toLong() >= fetchLimit
 
-            Log.d(TAG, "Fetched page=$page, size=${filteredPosts.size}, hasMore=$hasMore, search='$cleanQuery', category='$cleanCategory'")
+            Log.d(TAG, "Home Feed: Page=$page, Filtered=${filteredPosts.size}, Raw=${rawDocs.size}, hasMore=$hasMore")
             Result.success(
                 PaginatedPosts(
                     posts = filteredPosts,
@@ -133,27 +178,100 @@ class PostRepository(
     }
 
     /**
-     * Returns a real-time Flow of posts ordered newest first.
+     * Post Owner Dashboard: Queries ONLY posts where ownerUid == currentUser.uid.
+     * Strictly fulfills requirement:
+     * "Query only the current user's posts using ownerUid == currentUser.uid.
+     *  Never fetch all posts and filter them locally to implement My Posts."
      */
-    fun getPostsFlow(): Flow<List<PostItem>> = callbackFlow {
-        val listenerRegistration = firestore.collection(POSTS_COLLECTION)
+    suspend fun getMyPostsPaginated(
+        ownerUid: String,
+        page: Int = 1,
+        pageSize: Int = DEFAULT_PAGE_SIZE,
+        searchQuery: String = "",
+        category: String? = null,
+        typeFilter: String? = null,
+        statusFilter: String? = null,
+        lastSnapshot: DocumentSnapshot? = null
+    ): Result<PaginatedPosts> {
+        return try {
+            require(ownerUid.isNotBlank()) { "Owner UID is required to load My Posts" }
+
+            val cleanQuery = searchQuery.trim()
+            val cleanCategory = if (category == "All Items" || category.isNullOrBlank()) null else category
+            val cleanType = if (typeFilter == "ALL" || typeFilter.isNullOrBlank()) null else typeFilter
+            val cleanStatus = if (statusFilter == "ALL" || statusFilter.isNullOrBlank()) null else statusFilter
+
+            // Direct server-side filter by ownerUid
+            var query: Query = firestore.collection(POSTS_COLLECTION)
+                .whereEqualTo("ownerUid", ownerUid)
+                .orderBy("createdAt", Query.Direction.DESCENDING)
+
+            if (page > 1 && lastSnapshot != null) {
+                query = query.startAfter(lastSnapshot)
+            }
+
+            val needsClientFiltering = cleanQuery.isNotBlank() || cleanCategory != null || cleanType != null || cleanStatus != null
+            val fetchLimit = if (needsClientFiltering) (pageSize * 3).toLong() else pageSize.toLong()
+
+            val snapshot = query.limit(fetchLimit).get().await()
+            val rawDocs = snapshot.documents
+            val allMyPosts = rawDocs.mapNotNull { parsePost(it) }
+
+            val filtered = allMyPosts.filter { post ->
+                val matchesCategory = cleanCategory == null || post.category.equals(cleanCategory, ignoreCase = true)
+                val matchesType = cleanType == null || post.type.equals(cleanType, ignoreCase = true)
+                val matchesStatus = cleanStatus == null || post.status.equals(cleanStatus, ignoreCase = true)
+                val matchesSearch = cleanQuery.isBlank() ||
+                        post.title.contains(cleanQuery, ignoreCase = true) ||
+                        post.description.contains(cleanQuery, ignoreCase = true) ||
+                        post.location.contains(cleanQuery, ignoreCase = true)
+
+                matchesCategory && matchesType && matchesStatus && matchesSearch
+            }
+
+            val newLastDoc = rawDocs.lastOrNull()
+            val hasMore = rawDocs.size.toLong() >= fetchLimit
+
+            Log.d(TAG, "My Posts: Page=$page, Filtered=${filtered.size}, Raw=${rawDocs.size}, hasMore=$hasMore")
+            Result.success(
+                PaginatedPosts(
+                    posts = filtered,
+                    lastSnapshot = newLastDoc,
+                    hasMore = hasMore,
+                    page = page
+                )
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to fetch My Posts: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Real-time Flow of user's posts.
+     */
+    fun getMyPostsFlow(ownerUid: String): Flow<List<PostItem>> = callbackFlow {
+        if (ownerUid.isBlank()) {
+            trySend(emptyList())
+            close()
+            return@callbackFlow
+        }
+
+        val registration = firestore.collection(POSTS_COLLECTION)
+            .whereEqualTo("ownerUid", ownerUid)
             .orderBy("createdAt", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
-                    Log.e(TAG, "Error listening to posts collection: ${error.message}", error)
+                    Log.e(TAG, "Error listening to user posts: ${error.message}", error)
                     close(error)
                     return@addSnapshotListener
                 }
 
-                if (snapshot != null) {
-                    val posts = snapshot.documents.mapNotNull { parsePost(it) }
-                    trySend(posts)
-                }
+                val posts = snapshot?.documents?.mapNotNull { parsePost(it) } ?: emptyList()
+                trySend(posts)
             }
 
-        awaitClose {
-            listenerRegistration.remove()
-        }
+        awaitClose { registration.remove() }
     }
 
     /**
@@ -162,6 +280,7 @@ class PostRepository(
     suspend fun deletePost(postId: String): Result<Unit> {
         return try {
             firestore.collection(POSTS_COLLECTION).document(postId).delete().await()
+            Log.d(TAG, "Post $postId deleted successfully")
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to delete post $postId: ${e.message}", e)
@@ -182,7 +301,8 @@ class PostRepository(
                 imageUrl = doc.getString("imageUrl") ?: doc.getString("mediaUrl").orEmpty(),
                 imagePublicId = doc.getString("imagePublicId") ?: doc.getString("mediaPublicId").orEmpty(),
                 status = doc.getString("status") ?: "OPEN",
-                createdAt = doc.getTimestamp("createdAt")
+                createdAt = doc.getTimestamp("createdAt"),
+                updatedAt = doc.getTimestamp("updatedAt")
             )
         } catch (e: Exception) {
             Log.w(TAG, "Error parsing post document ${doc.id}", e)
@@ -190,4 +310,3 @@ class PostRepository(
         }
     }
 }
-

@@ -6,17 +6,18 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.DocumentSnapshot
 import com.shashidhara.foundit.data.model.PostItem
+import com.shashidhara.foundit.data.model.PostRequest
 import com.shashidhara.foundit.data.model.UserProfile
 import com.shashidhara.foundit.data.repository.CloudinaryRepository
 import com.shashidhara.foundit.data.repository.CloudinaryUploadResult
 import com.shashidhara.foundit.data.repository.PostRepository
-import com.google.firebase.firestore.DocumentSnapshot
+import com.shashidhara.foundit.data.repository.RequestRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -39,12 +40,15 @@ data class FeedUiState(
     val pageSize: Int = 20,
     val searchQuery: String = "",
     val selectedCategory: String = "All Items",
+    val selectedType: String = "ALL", // "ALL", "LOST", "FOUND"
+    val selectedStatus: String = "ALL", // "ALL", "OPEN", "RESOLVED"
     val error: String? = null
 )
 
 class PostViewModel(
     private val postRepository: PostRepository = PostRepository(),
-    private val cloudinaryRepository: CloudinaryRepository = CloudinaryRepository()
+    private val cloudinaryRepository: CloudinaryRepository = CloudinaryRepository(),
+    private val requestRepository: RequestRepository = RequestRepository()
 ) : ViewModel() {
 
     companion object {
@@ -66,6 +70,16 @@ class PostViewModel(
             initialValue = emptyList()
         )
 
+    // Request State for Post Details
+    private val _currentPostRequest = MutableStateFlow<PostRequest?>(null)
+    val currentPostRequest: StateFlow<PostRequest?> = _currentPostRequest.asStateFlow()
+
+    private val _isSubmittingRequest = MutableStateFlow(false)
+    val isSubmittingRequest: StateFlow<Boolean> = _isSubmittingRequest.asStateFlow()
+
+    private val _requestFeedback = MutableStateFlow<String?>(null)
+    val requestFeedback: StateFlow<String?> = _requestFeedback.asStateFlow()
+
     init {
         loadInitialPosts()
     }
@@ -73,20 +87,29 @@ class PostViewModel(
     fun onSearchQueryChanged(query: String) {
         if (_feedUiState.value.searchQuery == query) return
         _feedUiState.update { it.copy(searchQuery = query) }
-        loadInitialPosts(search = query, category = _feedUiState.value.selectedCategory)
+        loadInitialPosts(search = query)
     }
 
     fun onCategorySelected(category: String) {
         if (_feedUiState.value.selectedCategory == category) return
         _feedUiState.update { it.copy(selectedCategory = category) }
-        loadInitialPosts(search = _feedUiState.value.searchQuery, category = category)
+        loadInitialPosts(category = category)
+    }
+
+    fun onTypeFilterChanged(type: String) {
+        if (_feedUiState.value.selectedType == type) return
+        _feedUiState.update { it.copy(selectedType = type) }
+        loadInitialPosts(typeFilter = type)
+    }
+
+    fun onStatusFilterChanged(status: String) {
+        if (_feedUiState.value.selectedStatus == status) return
+        _feedUiState.update { it.copy(selectedStatus = status) }
+        loadInitialPosts(statusFilter = status)
     }
 
     fun refreshFeed() {
-        loadInitialPosts(
-            search = _feedUiState.value.searchQuery,
-            category = _feedUiState.value.selectedCategory
-        )
+        loadInitialPosts()
     }
 
     fun loadNextPage() {
@@ -104,6 +127,8 @@ class PostViewModel(
                 pageSize = currentState.pageSize,
                 searchQuery = currentState.searchQuery,
                 category = currentState.selectedCategory,
+                typeFilter = currentState.selectedType,
+                statusFilter = currentState.selectedStatus,
                 lastSnapshot = lastSnapshot
             )
 
@@ -132,7 +157,9 @@ class PostViewModel(
 
     private fun loadInitialPosts(
         search: String = _feedUiState.value.searchQuery,
-        category: String = _feedUiState.value.selectedCategory
+        category: String = _feedUiState.value.selectedCategory,
+        typeFilter: String = _feedUiState.value.selectedType,
+        statusFilter: String = _feedUiState.value.selectedStatus
     ) {
         viewModelScope.launch {
             _feedUiState.update {
@@ -150,6 +177,8 @@ class PostViewModel(
                 pageSize = 20,
                 searchQuery = search,
                 category = category,
+                typeFilter = typeFilter,
+                statusFilter = statusFilter,
                 lastSnapshot = null
             )
 
@@ -176,7 +205,65 @@ class PostViewModel(
         }
     }
 
-    // Form states
+    // --- Request / Response Actions for Post Details ---
+
+    fun checkUserRequestForPost(postId: String, currentUserUid: String) {
+        if (postId.isBlank() || currentUserUid.isBlank()) {
+            _currentPostRequest.value = null
+            return
+        }
+
+        viewModelScope.launch {
+            val result = requestRepository.getRequestForPost(postId, currentUserUid)
+            if (result.isSuccess) {
+                _currentPostRequest.value = result.getOrNull()
+            } else {
+                _currentPostRequest.value = null
+            }
+        }
+    }
+
+    fun submitPostRequest(
+        postId: String,
+        postOwnerUid: String,
+        currentUser: UserProfile,
+        message: String,
+        onSuccess: () -> Unit
+    ) {
+        if (message.isBlank()) {
+            _requestFeedback.value = "Please enter a message for the post owner."
+            return
+        }
+
+        viewModelScope.launch {
+            _isSubmittingRequest.value = true
+            _requestFeedback.value = null
+
+            val result = requestRepository.submitRequest(
+                postId = postId,
+                postOwnerUid = postOwnerUid,
+                requester = currentUser,
+                message = message
+            )
+
+            _isSubmittingRequest.value = false
+
+            if (result.isSuccess) {
+                _currentPostRequest.value = result.getOrNull()
+                _requestFeedback.value = "Request submitted successfully! The owner will be notified."
+                onSuccess()
+            } else {
+                _requestFeedback.value = result.exceptionOrNull()?.message ?: "Failed to submit request."
+            }
+        }
+    }
+
+    fun clearRequestFeedback() {
+        _requestFeedback.value = null
+    }
+
+    // --- Create Post Form State ---
+
     private val _title = MutableStateFlow("")
     val title: StateFlow<String> = _title.asStateFlow()
 
@@ -201,7 +288,6 @@ class PostViewModel(
     private val _isVideo = MutableStateFlow(false)
     val isVideo: StateFlow<Boolean> = _isVideo.asStateFlow()
 
-    // Retained media upload result for safe retries without re-uploading
     private val _uploadedMedia = MutableStateFlow<CloudinaryUploadResult?>(null)
     val uploadedMedia: StateFlow<CloudinaryUploadResult?> = _uploadedMedia.asStateFlow()
 
@@ -217,11 +303,10 @@ class PostViewModel(
     fun setLocation(value: String) { _location.value = value }
     fun setPostType(value: String) { _postType.value = value }
 
-    fun onMediaSelected(uri: Uri, mimeType: String?, isVideo: Boolean) {
+    fun onMediaSelected(uri: Uri, mimeType: String, isVid: Boolean) {
         _selectedMediaUri.value = uri
         _selectedMediaMimeType.value = mimeType
-        _isVideo.value = isVideo
-        // If a new media file was selected, clear the previous upload result
+        _isVideo.value = isVid
         _uploadedMedia.value = null
         _uploadProgress.value = 0f
         _submissionState.value = SubmissionState.Idle
@@ -250,29 +335,24 @@ class PostViewModel(
     }
 
     /**
-     * Submits the post:
-     * 1. Validates inputs and authentication.
-     * 2. Uploads media to Cloudinary if not already uploaded.
-     * 3. Saves post to Firestore.
-     * If Firestore saving fails, the uploaded media result is preserved so the user can retry without re-uploading.
+     * Submits a new post to Cloudinary and Cloud Firestore.
      */
-    fun submitPost(context: Context, currentUser: UserProfile? = null) {
-        val authUser = FirebaseAuth.getInstance().currentUser
-        if (authUser == null) {
+    fun submitPost(context: Context, currentUser: UserProfile?) {
+        val ownerUid = currentUser?.uid ?: FirebaseAuth.getInstance().currentUser?.uid
+        if (ownerUid.isNullOrBlank()) {
             _submissionState.value = SubmissionState.Error(
-                message = "Please sign in with Google to create a post.",
+                message = "You must be signed in with Google to create a post.",
                 canRetrySave = false
             )
             return
         }
 
-        val ownerUid = authUser.uid
         val trimmedTitle = _title.value.trim()
         val trimmedLocation = _location.value.trim()
 
         if (trimmedTitle.isBlank()) {
             _submissionState.value = SubmissionState.Error(
-                message = "Please enter an item title.",
+                message = "Please provide an item title.",
                 canRetrySave = false
             )
             return
@@ -280,7 +360,7 @@ class PostViewModel(
 
         if (trimmedLocation.isBlank()) {
             _submissionState.value = SubmissionState.Error(
-                message = "Please specify the location.",
+                message = "Please provide the location where the item was lost or found.",
                 canRetrySave = false
             )
             return
@@ -291,7 +371,7 @@ class PostViewModel(
 
         if (mediaUri == null && existingUpload == null) {
             _submissionState.value = SubmissionState.Error(
-                message = "Please select an image or video.",
+                message = "Please select a photo or video proof from your device.",
                 canRetrySave = false
             )
             return
@@ -361,7 +441,7 @@ class PostViewModel(
             } else {
                 val error = firestoreResult.exceptionOrNull()
                 Log.e(TAG, "Failed to save post to Firestore", error)
-                // Note: _uploadedMedia is retained here so user can retry saving without re-uploading!
+                // Retain _uploadedMedia so user can retry without re-uploading
                 _submissionState.value = SubmissionState.Error(
                     message = "Media uploaded, but failed to save post: ${error?.localizedMessage}. Tap 'Retry' to save without re-uploading.",
                     canRetrySave = true

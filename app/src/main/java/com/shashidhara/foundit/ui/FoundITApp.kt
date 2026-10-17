@@ -28,6 +28,7 @@ import com.shashidhara.foundit.ui.components.FoundITTopBar
 import com.shashidhara.foundit.ui.navigation.Screen
 import com.shashidhara.foundit.ui.screens.AccountScreen
 import com.shashidhara.foundit.ui.screens.CreatePostScreen
+import com.shashidhara.foundit.ui.screens.DashboardScreen
 import com.shashidhara.foundit.ui.screens.HomeScreen
 import com.shashidhara.foundit.ui.theme.ColorPureBlack
 import com.shashidhara.foundit.ui.theme.ColorPureWhite
@@ -121,6 +122,7 @@ fun FoundITApp(
                     when (screen) {
                         is Screen.Home -> HomeScreen(
                             postViewModel = postViewModel,
+                            currentUser = currentUserProfile,
                             onNavigateToCreatePost = { postType ->
                                 initialCreatePostType = postType
                                 currentScreen = Screen.CreatePost
@@ -137,7 +139,20 @@ fun FoundITApp(
                                 currentScreen = Screen.Home
                             }
                         )
-                        is Screen.MyAccount -> AccountScreen(authViewModel = authViewModel)
+                        is Screen.MyPosts -> DashboardScreen(
+                            currentUser = currentUserProfile,
+                            onNavigateToCreatePost = {
+                                initialCreatePostType = "LOST"
+                                currentScreen = Screen.CreatePost
+                            },
+                            onNavigateToSignIn = {
+                                currentScreen = Screen.MyAccount
+                            }
+                        )
+                        is Screen.MyAccount -> AccountScreen(
+                            authViewModel = authViewModel,
+                            onNavigateToMyPosts = { currentScreen = Screen.MyPosts }
+                        )
                     }
                 }
             }

@@ -89,4 +89,40 @@ class ExampleUnitTest {
             }
         }
     }
+
+    @Test
+    fun testDashboardScreenRendersWithoutCrash() {
+        composeTestRule.setContent {
+            FoundITTheme {
+                com.shashidhara.foundit.ui.screens.DashboardScreen(
+                    currentUser = com.shashidhara.foundit.data.model.UserProfile(
+                        uid = "test-uid-123",
+                        name = "Test User",
+                        email = "test@example.com"
+                    ),
+                    onNavigateToCreatePost = {},
+                    onNavigateToSignIn = {}
+                )
+            }
+        }
+    }
+
+    @Test
+    fun testPostRequestDeterministicIdAndLifecycle() {
+        val postId = "post_abc"
+        val requesterUid = "user_xyz"
+        val id = com.shashidhara.foundit.data.model.PostRequest.generateId(postId, requesterUid)
+        assertEquals("post_abc_user_xyz", id)
+
+        val request = com.shashidhara.foundit.data.model.PostRequest(
+            id = id,
+            postId = postId,
+            requesterUid = requesterUid,
+            postOwnerUid = "owner_123",
+            message = "I found your item",
+            status = com.shashidhara.foundit.data.model.PostRequest.STATUS_PENDING
+        )
+        assertEquals(true, request.isPending)
+        assertEquals(false, request.isAccepted)
+    }
 }

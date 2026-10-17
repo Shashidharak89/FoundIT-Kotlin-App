@@ -27,7 +27,8 @@ data class PostItem(
     val imageUrl: String = "",
     val imagePublicId: String = "",
     val status: String = "OPEN",
-    val createdAt: Timestamp? = null
+    val createdAt: Timestamp? = null,
+    val updatedAt: Timestamp? = null
 ) {
     // UI convenience properties
     val isVideo: Boolean
