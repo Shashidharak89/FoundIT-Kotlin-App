@@ -1,11 +1,16 @@
 package com.shashidhara.foundit.ui.screens
 
+import android.net.Uri
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -273,7 +278,7 @@ fun DashboardScreen(
         EditPostDialog(
             post = post,
             onDismiss = { postToEdit = null },
-            onSave = { title, desc, cat, loc, status ->
+            onSave = { title, desc, cat, loc, status, type, newMediaUri, clearMedia ->
                 dashboardViewModel.updatePostDetails(
                     postId = post.id,
                     title = title,
@@ -281,6 +286,12 @@ fun DashboardScreen(
                     category = cat,
                     location = loc,
                     status = status,
+                    type = type,
+                    existingImageUrl = post.imageUrl,
+                    existingImagePublicId = post.imagePublicId,
+                    newMediaUri = newMediaUri,
+                    clearMedia = clearMedia,
+                    context = context,
                     onSuccess = { postToEdit = null }
                 )
             }
@@ -1039,13 +1050,35 @@ private fun SentRequestsTabContent(
 private fun EditPostDialog(
     post: PostItem,
     onDismiss: () -> Unit,
-    onSave: (title: String, description: String, category: String, location: String, status: String) -> Unit
+    onSave: (
+        title: String,
+        description: String,
+        category: String,
+        location: String,
+        status: String,
+        type: String,
+        newMediaUri: Uri?,
+        clearMedia: Boolean
+    ) -> Unit
 ) {
-    var title by remember { mutableStateOf(post.title) }
-    var description by remember { mutableStateOf(post.description) }
-    var category by remember { mutableStateOf(post.category) }
-    var location by remember { mutableStateOf(post.location) }
-    var status by remember { mutableStateOf(post.status) }
+    var title by remember(post) { mutableStateOf(post.title) }
+    var description by remember(post) { mutableStateOf(post.description) }
+    var category by remember(post) { mutableStateOf(post.category.ifBlank { "Other" }) }
+    var location by remember(post) { mutableStateOf(post.location) }
+    var status by remember(post) { mutableStateOf(post.status.ifBlank { "OPEN" }) }
+    var type by remember(post) { mutableStateOf(post.type.ifBlank { "LOST" }) }
+    var newMediaUri by remember { mutableStateOf<Uri?>(null) }
+    var clearMedia by remember { mutableStateOf(false) }
+    var isSaving by remember { mutableStateOf(false) }
+
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        if (uri != null) {
+            newMediaUri = uri
+            clearMedia = false
+        }
+    }
 
     val categories = remember {
         listOf("Electronics", "Wallets & Cards", "Keys", "Bags", "Documents", "Clothing", "Other")
@@ -1055,7 +1088,7 @@ private fun EditPostDialog(
         listOf("OPEN", "PENDING", "RESOLVED", "CLOSED")
     }
 
-    Dialog(onDismissRequest = onDismiss) {
+    Dialog(onDismissRequest = { if (!isSaving) onDismiss() }) {
         Surface(
             shape = RoundedCornerShape(20.dp),
             color = ColorPureWhite,
@@ -1064,6 +1097,7 @@ private fun EditPostDialog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
                     .padding(20.dp)
             ) {
                 Text(
@@ -1075,10 +1109,41 @@ private fun EditPostDialog(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
+                // Post Type Selector: LOST vs FOUND
+                Text(text = "Post Type", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextSecondarySlate)
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    listOf("LOST", "FOUND").forEach { itemType ->
+                        val isSelected = type.equals(itemType, ignoreCase = true)
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(if (isSelected) BrandTealBase else AppSurfaceSubtle)
+                                .border(1.dp, if (isSelected) BrandTealBase else AppBorderLight, RoundedCornerShape(10.dp))
+                                .clickable { type = itemType }
+                                .padding(vertical = 8.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = itemType,
+                                fontSize = 12.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                color = if (isSelected) BrandMintBase else TextPrimaryDark
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
-                    label = { Text("Title") },
+                    label = { Text("Title *") },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
                 )
@@ -1088,7 +1153,7 @@ private fun EditPostDialog(
                 OutlinedTextField(
                     value = location,
                     onValueChange = { location = it },
-                    label = { Text("Location") },
+                    label = { Text("Location *") },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
                 )
@@ -1106,6 +1171,36 @@ private fun EditPostDialog(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
+                // Category Selector
+                Text(text = "Category", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextSecondarySlate)
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    categories.forEach { cat ->
+                        val isSelected = category.equals(cat, ignoreCase = true)
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (isSelected) BrandTealBase else AppSurfaceSubtle)
+                                .border(1.dp, if (isSelected) BrandTealBase else AppBorderLight, RoundedCornerShape(8.dp))
+                                .clickable { category = cat }
+                                .padding(horizontal = 10.dp, vertical = 6.dp)
+                        ) {
+                            Text(
+                                text = cat,
+                                fontSize = 11.sp,
+                                color = if (isSelected) BrandMintBase else TextPrimaryDark,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Status Selector
                 Text(text = "Status", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextSecondarySlate)
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(
@@ -1113,21 +1208,82 @@ private fun EditPostDialog(
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     statuses.forEach { s ->
-                        val isSelected = status == s
+                        val isSelected = status.equals(s, ignoreCase = true)
                         Box(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
+                                .clip(RoundedCornerShape(8.dp))
                                 .background(if (isSelected) BrandTealBase else AppSurfaceSubtle)
+                                .border(1.dp, if (isSelected) BrandTealBase else AppBorderLight, RoundedCornerShape(8.dp))
                                 .clickable { status = s }
                                 .padding(horizontal = 10.dp, vertical = 6.dp)
                         ) {
                             Text(
                                 text = s,
                                 fontSize = 11.sp,
-                                color = if (isSelected) ColorPureWhite else TextPrimaryDark,
+                                color = if (isSelected) BrandMintBase else TextPrimaryDark,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                             )
                         }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Media Preview & Controls
+                Text(text = "Attached Media", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextSecondarySlate)
+                Spacer(modifier = Modifier.height(6.dp))
+
+                val hasMedia = (newMediaUri != null || (post.imageUrl.isNotBlank() && !clearMedia))
+                if (hasMedia) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        SubcomposeAsyncImage(
+                            model = newMediaUri ?: post.imageUrl,
+                            contentDescription = "Post media preview",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .size(70.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .border(1.dp, AppBorderLight, RoundedCornerShape(10.dp))
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            OutlinedButton(
+                                onClick = {
+                                    photoPickerLauncher.launch(
+                                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)
+                                    )
+                                },
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                            ) {
+                                Text("Change Media", fontSize = 11.sp, color = BrandTealBase)
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                            TextButton(
+                                onClick = {
+                                    newMediaUri = null
+                                    clearMedia = true
+                                },
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                            ) {
+                                Text("Remove Media", fontSize = 11.sp, color = Color(0xFFDC2626))
+                            }
+                        }
+                    }
+                } else {
+                    OutlinedButton(
+                        onClick = {
+                            photoPickerLauncher.launch(
+                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)
+                            )
+                        },
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Add Photo or Video", fontSize = 12.sp, color = BrandTealBase)
                     }
                 }
 
@@ -1135,9 +1291,13 @@ private fun EditPostDialog(
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    TextButton(onClick = onDismiss) {
+                    TextButton(
+                        onClick = onDismiss,
+                        enabled = !isSaving
+                    ) {
                         Text("Cancel", color = TextSecondarySlate)
                     }
 
@@ -1145,16 +1305,22 @@ private fun EditPostDialog(
 
                     Button(
                         onClick = {
-                            if (title.isNotBlank() && location.isNotBlank()) {
-                                onSave(title, description, category, location, status)
+                            if (title.isNotBlank() && location.isNotBlank() && !isSaving) {
+                                isSaving = true
+                                onSave(title, description, category, location, status, type, newMediaUri, clearMedia)
                             }
                         },
+                        enabled = title.isNotBlank() && location.isNotBlank() && !isSaving,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = BrandTealBase,
                             contentColor = ColorPureWhite
                         ),
                         shape = RoundedCornerShape(10.dp)
                     ) {
+                        if (isSaving) {
+                            CircularProgressIndicator(modifier = Modifier.size(16.dp), color = ColorPureWhite, strokeWidth = 2.dp)
+                            Spacer(modifier = Modifier.width(6.dp))
+                        }
                         Text("Save Changes")
                     }
                 }

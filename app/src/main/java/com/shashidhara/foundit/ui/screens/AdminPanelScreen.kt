@@ -167,6 +167,7 @@ fun AdminPanelScreen(
                         onFilterType = { adminViewModel.onFilterCasesType(it) },
                         onFilterStatus = { adminViewModel.onFilterCasesStatus(it) },
                         onLoadMore = { adminViewModel.loadCases(reset = false) },
+                        onEditClick = { adminViewModel.selectCaseForEdit(it) },
                         onStatusClick = { adminViewModel.selectCaseForStatusChange(it) },
                         onReceiptClick = { adminViewModel.selectCaseForReceipt(it) },
                         onReturnClick = { adminViewModel.selectCaseForReturn(it) },
@@ -208,6 +209,32 @@ fun AdminPanelScreen(
                         postId = caseItem.id,
                         previousStatus = caseItem.status,
                         newStatus = newStatus,
+                        reason = reason
+                    )
+                }
+            )
+        }
+
+        // Admin Edit Post Dialog (Autofills all existing fields)
+        uiState.selectedCaseForEdit?.let { caseItem ->
+            AdminEditPostDialog(
+                caseItem = caseItem,
+                isActionInProgress = uiState.isActionInProgress,
+                onDismiss = { adminViewModel.selectCaseForEdit(null) },
+                onSave = { title, description, category, location, type, status, newMediaUri, clearMedia, reason ->
+                    adminViewModel.submitPostEdit(
+                        postId = caseItem.id,
+                        title = title,
+                        description = description,
+                        category = category,
+                        location = location,
+                        type = type,
+                        status = status,
+                        existingImageUrl = caseItem.imageUrl,
+                        existingImagePublicId = caseItem.imagePublicId,
+                        newMediaUri = newMediaUri,
+                        clearMedia = clearMedia,
+                        context = context,
                         reason = reason
                     )
                 }
@@ -416,7 +443,51 @@ private fun AdminDashboardOverview(
         return
     }
 
-    val metrics = uiState.metrics ?: return
+    if (uiState.metricsError != null || uiState.metrics == null) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = AppSurfaceWhite),
+                border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(AppBorderLight)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Unable to load dashboard metrics",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimaryDark
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = uiState.metricsError ?: "Please verify your network connection and admin authorization.",
+                        fontSize = 12.sp,
+                        color = TextSecondarySlate,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(
+                        onClick = onRefresh,
+                        colors = ButtonDefaults.buttonColors(containerColor = BrandTealBase),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text("Retry", color = ColorPureWhite)
+                    }
+                }
+            }
+        }
+        return
+    }
+
+    val metrics = uiState.metrics
 
     Column(
         modifier = Modifier
@@ -698,6 +769,7 @@ private fun AdminCasesView(
     onFilterType: (String) -> Unit,
     onFilterStatus: (String) -> Unit,
     onLoadMore: () -> Unit,
+    onEditClick: (PostItem) -> Unit,
     onStatusClick: (PostItem) -> Unit,
     onReceiptClick: (PostItem) -> Unit,
     onReturnClick: (PostItem) -> Unit,
@@ -814,6 +886,7 @@ private fun AdminCasesView(
                 items(uiState.cases, key = { it.id }) { caseItem ->
                     AdminCaseCard(
                         caseItem = caseItem,
+                        onEditClick = { onEditClick(caseItem) },
                         onStatusClick = { onStatusClick(caseItem) },
                         onReceiptClick = { onReceiptClick(caseItem) },
                         onReturnClick = { onReturnClick(caseItem) },
@@ -851,6 +924,7 @@ private fun AdminCasesView(
 @Composable
 private fun AdminCaseCard(
     caseItem: PostItem,
+    onEditClick: () -> Unit,
     onStatusClick: () -> Unit,
     onReceiptClick: () -> Unit,
     onReturnClick: () -> Unit,
@@ -977,12 +1051,27 @@ private fun AdminCaseCard(
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 OutlinedButton(
+                    onClick = onEditClick,
+                    shape = RoundedCornerShape(8.dp),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
+                ) {
+                    Icon(
+                        imageVector = FoundITIcons.Edit,
+                        contentDescription = "Edit Post",
+                        modifier = Modifier.size(12.dp),
+                        tint = BrandTealBase
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Edit", fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = BrandTealBase)
+                }
+
+                OutlinedButton(
                     onClick = onStatusClick,
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(8.dp),
                     contentPadding = PaddingValues(horizontal = 6.dp, vertical = 6.dp)
                 ) {
-                    Text("Change Status", fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = BrandTealBase)
+                    Text("Status", fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = BrandTealBase)
                 }
 
                 // Show Receipt action if case is awaiting handover or in an open/pending stage
@@ -1481,17 +1570,25 @@ private fun StatusChangeDialog(
         CaseLifecycle.getAllowedTransitions(caseItem.status)
     }
 
-    var selectedStatus by remember { mutableStateOf(allowedTransitions.firstOrNull() ?: "") }
+    // Critical Requirement: Autofill with current saved status
+    var selectedStatus by remember(caseItem.status) { mutableStateOf(caseItem.status) }
     var reason by remember { mutableStateOf("") }
     var validationError by remember { mutableStateOf<String?>(null) }
+    var showAllStatuses by remember { mutableStateOf(false) }
+
+    val displayStatuses = if (showAllStatuses) CaseLifecycle.ALL_STATUSES else (listOf(caseItem.status) + allowedTransitions).distinct()
 
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { if (!isActionInProgress) onDismiss() },
         title = {
             Text(text = "Update Case Status", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = TextPrimaryDark)
         },
         text = {
-            Column(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+            ) {
                 Text(
                     text = "Post: ${caseItem.title}",
                     fontSize = 12.sp,
@@ -1501,49 +1598,53 @@ private fun StatusChangeDialog(
                 Text(
                     text = "Current Status: ${CaseLifecycle.getStatusLabel(caseItem.status)}",
                     fontSize = 11.sp,
-                    color = TextMutedSlate
+                    color = BrandTealBase,
+                    fontWeight = FontWeight.Medium
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                if (allowedTransitions.isEmpty()) {
-                    Text(
-                        text = "This case has reached a final state (${caseItem.status}). No standard transitions permitted.",
-                        fontSize = 12.sp,
-                        color = Color(0xFFDC2626)
-                    )
-                } else {
-                    Text(
-                        text = "Permitted Next Transitions:",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = TextPrimaryDark
-                    )
+                Text(
+                    text = if (showAllStatuses) "Select Any System Status (Admin Override):" else "Permitted Status Options:",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimaryDark
+                )
 
-                    allowedTransitions.forEach { targetStatus ->
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { selectedStatus = targetStatus }
-                                .padding(vertical = 4.dp)
-                        ) {
-                            RadioButton(
-                                selected = selectedStatus == targetStatus,
-                                onClick = { selectedStatus = targetStatus },
-                                colors = RadioButtonDefaults.colors(selectedColor = BrandTealBase)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = CaseLifecycle.getStatusLabel(targetStatus),
-                                fontSize = 12.sp,
-                                color = TextPrimaryDark
-                            )
-                        }
+                displayStatuses.forEach { targetStatus ->
+                    val isCurrent = targetStatus.equals(caseItem.status, ignoreCase = true)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { selectedStatus = targetStatus }
+                            .padding(vertical = 4.dp)
+                    ) {
+                        RadioButton(
+                            selected = selectedStatus == targetStatus,
+                            onClick = { selectedStatus = targetStatus },
+                            colors = RadioButtonDefaults.colors(selectedColor = BrandTealBase)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = CaseLifecycle.getStatusLabel(targetStatus) + if (isCurrent) " (Current)" else "",
+                            fontSize = 12.sp,
+                            fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
+                            color = if (isCurrent) BrandTealBase else TextPrimaryDark
+                        )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                if (!showAllStatuses) {
+                    TextButton(
+                        onClick = { showAllStatuses = true },
+                        contentPadding = PaddingValues(0.dp)
+                    ) {
+                        Text("Show all statuses (Admin Override)", fontSize = 11.sp, color = BrandTealBase)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
 
                 OutlinedTextField(
                     value = reason,
@@ -1551,8 +1652,8 @@ private fun StatusChangeDialog(
                         reason = it
                         validationError = null
                     },
-                    label = { Text("Administrative Reason *", fontSize = 11.sp) },
-                    placeholder = { Text("e.g. Owner verified custody on campus", fontSize = 11.sp) },
+                    label = { Text("Administrative Justification *", fontSize = 11.sp) },
+                    placeholder = { Text("e.g. Owner verified and item handed over on campus", fontSize = 11.sp) },
                     modifier = Modifier.fillMaxWidth(),
                     isError = validationError != null,
                     supportingText = validationError?.let { { Text(it, color = Color(0xFFDC2626), fontSize = 10.sp) } }
@@ -1566,20 +1667,305 @@ private fun StatusChangeDialog(
                         validationError = "Please select a target status"
                         return@Button
                     }
+                    if (selectedStatus.equals(caseItem.status, ignoreCase = true)) {
+                        validationError = "Please select a different status to update"
+                        return@Button
+                    }
                     if (reason.trim().isBlank()) {
-                        validationError = "Reason is mandatory for status change audit"
+                        validationError = "Administrative reason is mandatory for status change audit"
                         return@Button
                     }
                     onConfirm(selectedStatus, reason.trim())
                 },
-                enabled = !isActionInProgress && allowedTransitions.isNotEmpty(),
+                enabled = !isActionInProgress && !selectedStatus.equals(caseItem.status, ignoreCase = true),
                 colors = ButtonDefaults.buttonColors(containerColor = BrandTealBase)
             ) {
                 if (isActionInProgress) {
-                    CircularProgressIndicator(modifier = Modifier.size(16.dp), color = BrandMintBase)
-                } else {
-                    Text("Confirm", color = BrandMintBase)
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp), color = BrandMintBase, strokeWidth = 2.dp)
+                    Spacer(modifier = Modifier.width(6.dp))
                 }
+                Text("Update Status", color = BrandMintBase)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !isActionInProgress) {
+                Text("Cancel", color = TextSecondarySlate)
+            }
+        }
+    )
+}
+
+/**
+ * Admin Edit Post Dialog.
+ * Autofills all existing saved fields (Title, Description, Category, Location, Type, Status, Media).
+ */
+@Composable
+private fun AdminEditPostDialog(
+    caseItem: PostItem,
+    isActionInProgress: Boolean,
+    onDismiss: () -> Unit,
+    onSave: (
+        title: String,
+        description: String,
+        category: String,
+        location: String,
+        type: String,
+        status: String,
+        newMediaUri: Uri?,
+        clearMedia: Boolean,
+        reason: String
+    ) -> Unit
+) {
+    var title by remember(caseItem) { mutableStateOf(caseItem.title) }
+    var description by remember(caseItem) { mutableStateOf(caseItem.description) }
+    var category by remember(caseItem) { mutableStateOf(caseItem.category.ifBlank { "Other" }) }
+    var location by remember(caseItem) { mutableStateOf(caseItem.location) }
+    var type by remember(caseItem) { mutableStateOf(caseItem.type.ifBlank { "LOST" }) }
+    var status by remember(caseItem) { mutableStateOf(caseItem.status.ifBlank { "OPEN" }) }
+    var newMediaUri by remember { mutableStateOf<Uri?>(null) }
+    var clearMedia by remember { mutableStateOf(false) }
+    var reason by remember { mutableStateOf("Admin verified and updated record details") }
+    var validationError by remember { mutableStateOf<String?>(null) }
+
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        if (uri != null) {
+            newMediaUri = uri
+            clearMedia = false
+        }
+    }
+
+    val categories = remember {
+        listOf("Electronics", "Wallets & Cards", "Keys", "Bags", "Documents", "Clothing", "Other")
+    }
+
+    AlertDialog(
+        onDismissRequest = { if (!isActionInProgress) onDismiss() },
+        title = {
+            Text(text = "Edit Case (Autofilled)", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = TextPrimaryDark)
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+            ) {
+                Text(
+                    text = "Post ID: ${caseItem.id} | Owner: ${caseItem.ownerUid.take(8)}...",
+                    fontSize = 11.sp,
+                    color = TextMutedSlate
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Post Type: LOST / FOUND
+                Text(text = "Post Type", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextSecondarySlate)
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf("LOST", "FOUND").forEach { itemType ->
+                        val isSelected = type.equals(itemType, ignoreCase = true)
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (isSelected) BrandTealBase else AppSurfaceSubtle)
+                                .border(1.dp, if (isSelected) BrandTealBase else AppBorderLight, RoundedCornerShape(8.dp))
+                                .clickable { type = itemType }
+                                .padding(vertical = 6.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = itemType,
+                                fontSize = 11.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                color = if (isSelected) BrandMintBase else TextPrimaryDark
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it; validationError = null },
+                    label = { Text("Title *", fontSize = 11.sp) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp)
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = location,
+                    onValueChange = { location = it; validationError = null },
+                    label = { Text("Location *", fontSize = 11.sp) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp)
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = { description = it },
+                    label = { Text("Description", fontSize = 11.sp) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp),
+                    minLines = 2
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Category selector
+                Text(text = "Category", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextSecondarySlate)
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    categories.forEach { cat ->
+                        val isSelected = category.equals(cat, ignoreCase = true)
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (isSelected) BrandTealBase else AppSurfaceSubtle)
+                                .border(1.dp, if (isSelected) BrandTealBase else AppBorderLight, RoundedCornerShape(8.dp))
+                                .clickable { category = cat }
+                                .padding(horizontal = 8.dp, vertical = 5.dp)
+                        ) {
+                            Text(
+                                text = cat,
+                                fontSize = 11.sp,
+                                color = if (isSelected) BrandMintBase else TextPrimaryDark,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Status selector
+                Text(text = "Status", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextSecondarySlate)
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    CaseLifecycle.ALL_STATUSES.forEach { st ->
+                        val isSelected = status.equals(st, ignoreCase = true)
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (isSelected) BrandTealBase else AppSurfaceSubtle)
+                                .border(1.dp, if (isSelected) BrandTealBase else AppBorderLight, RoundedCornerShape(8.dp))
+                                .clickable { status = st }
+                                .padding(horizontal = 8.dp, vertical = 5.dp)
+                        ) {
+                            Text(
+                                text = st,
+                                fontSize = 10.sp,
+                                color = if (isSelected) BrandMintBase else TextPrimaryDark,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Media Controls
+                Text(text = "Media", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextSecondarySlate)
+                Spacer(modifier = Modifier.height(4.dp))
+                val hasMedia = (newMediaUri != null || (caseItem.imageUrl.isNotBlank() && !clearMedia))
+                if (hasMedia) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        AsyncImage(
+                            model = newMediaUri ?: caseItem.imageUrl,
+                            contentDescription = "Post Image",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .size(60.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .border(1.dp, AppBorderLight, RoundedCornerShape(8.dp))
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column {
+                            OutlinedButton(
+                                onClick = {
+                                    photoPickerLauncher.launch(
+                                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)
+                                    )
+                                },
+                                shape = RoundedCornerShape(6.dp),
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                            ) {
+                                Text("Change Media", fontSize = 10.sp, color = BrandTealBase)
+                            }
+                            TextButton(
+                                onClick = {
+                                    newMediaUri = null
+                                    clearMedia = true
+                                },
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                            ) {
+                                Text("Remove Media", fontSize = 10.sp, color = Color(0xFFDC2626))
+                            }
+                        }
+                    }
+                } else {
+                    OutlinedButton(
+                        onClick = {
+                            photoPickerLauncher.launch(
+                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)
+                            )
+                        },
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Add Photo or Video", fontSize = 11.sp, color = BrandTealBase)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                OutlinedTextField(
+                    value = reason,
+                    onValueChange = { reason = it },
+                    label = { Text("Admin Audit Note *", fontSize = 11.sp) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp)
+                )
+
+                if (validationError != null) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(validationError.orEmpty(), color = Color(0xFFDC2626), fontSize = 11.sp)
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (title.isBlank()) {
+                        validationError = "Title is required"
+                        return@Button
+                    }
+                    if (location.isBlank()) {
+                        validationError = "Location is required"
+                        return@Button
+                    }
+                    onSave(title, description, category, location, type, status, newMediaUri, clearMedia, reason)
+                },
+                enabled = !isActionInProgress,
+                colors = ButtonDefaults.buttonColors(containerColor = BrandTealBase)
+            ) {
+                if (isActionInProgress) {
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp), color = BrandMintBase, strokeWidth = 2.dp)
+                    Spacer(modifier = Modifier.width(6.dp))
+                }
+                Text("Save Changes", color = BrandMintBase)
             }
         },
         dismissButton = {
@@ -2080,8 +2466,13 @@ private fun RequestOverrideDialog(
     onDismiss: () -> Unit,
     onConfirm: (newStatus: String, reason: String) -> Unit
 ) {
-    val statuses = listOf(PostRequest.STATUS_ACCEPTED, PostRequest.STATUS_REJECTED, PostRequest.STATUS_CANCELLED)
-    var selectedStatus by remember { mutableStateOf(statuses.first()) }
+    val statuses = listOf(
+        PostRequest.STATUS_PENDING,
+        PostRequest.STATUS_ACCEPTED,
+        PostRequest.STATUS_REJECTED,
+        PostRequest.STATUS_CANCELLED
+    )
+    var selectedStatus by remember(request.status) { mutableStateOf(request.status.ifBlank { PostRequest.STATUS_PENDING }) }
     var reason by remember { mutableStateOf("") }
     var validationError by remember { mutableStateOf<String?>(null) }
 

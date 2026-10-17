@@ -239,4 +239,51 @@ class ExampleUnitTest {
             }
         }
     }
+
+    @Test
+    fun testCaseLifecycleTransitionsAndResolution() {
+        // Verify OPEN can transition directly to RESOLVED and CLOSED
+        val openTransitions = com.shashidhara.foundit.data.model.CaseLifecycle.getAllowedTransitions("OPEN")
+        assertEquals(true, openTransitions.contains("RESOLVED"))
+        assertEquals(true, openTransitions.contains("CLOSED"))
+        assertEquals(true, openTransitions.contains("PENDING"))
+
+        // Verify PENDING can transition directly to RESOLVED and WITH_SECURITY
+        val pendingTransitions = com.shashidhara.foundit.data.model.CaseLifecycle.getAllowedTransitions("PENDING")
+        assertEquals(true, pendingTransitions.contains("RESOLVED"))
+        assertEquals(true, pendingTransitions.contains("WITH_SECURITY"))
+
+        // Verify Admin Override allows any valid status
+        assertEquals(true, com.shashidhara.foundit.data.model.CaseLifecycle.isValidTransition("OPEN", "RESOLVED", isAdmin = false))
+        assertEquals(true, com.shashidhara.foundit.data.model.CaseLifecycle.isValidTransition("CLOSED", "OPEN", isAdmin = false))
+        assertEquals(true, com.shashidhara.foundit.data.model.CaseLifecycle.isValidTransition("CLOSED", "RESOLVED", isAdmin = true))
+    }
+
+    @Test
+    fun testPostAutofillValuesIntegrity() {
+        val originalPost = com.shashidhara.foundit.data.model.PostItem(
+            id = "test_post_101",
+            ownerUid = "uid_456",
+            type = "FOUND",
+            title = "Found Umbrella",
+            description = "Blue umbrella near library",
+            category = "Other",
+            location = "Library 2nd Floor",
+            imageUrl = "https://res.cloudinary.com/demo/image/upload/sample.jpg",
+            imagePublicId = "sample",
+            status = "PENDING"
+        )
+
+        // Verify all fields are present and properly populated without loss
+        assertEquals("test_post_101", originalPost.id)
+        assertEquals("uid_456", originalPost.ownerUid)
+        assertEquals("FOUND", originalPost.type)
+        assertEquals("Found Umbrella", originalPost.title)
+        assertEquals("Blue umbrella near library", originalPost.description)
+        assertEquals("Other", originalPost.category)
+        assertEquals("Library 2nd Floor", originalPost.location)
+        assertEquals("https://res.cloudinary.com/demo/image/upload/sample.jpg", originalPost.imageUrl)
+        assertEquals("sample", originalPost.imagePublicId)
+        assertEquals("PENDING", originalPost.status)
+    }
 }

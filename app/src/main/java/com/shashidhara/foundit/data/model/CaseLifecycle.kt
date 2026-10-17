@@ -41,52 +41,67 @@ object CaseLifecycle {
 
     /**
      * Returns the list of permitted next statuses from the given [currentStatus].
-     * Normal progression:
+     * Standard progression:
      * OPEN -> PENDING -> AWAITING_SECURITY_HANDOVER -> WITH_SECURITY -> AWAITING_OWNER_COLLECTION -> RETURNED_TO_OWNER -> RESOLVED
+     * Also supports direct resolutions, closures, and administrative reopens.
      */
     fun getAllowedTransitions(currentStatus: String): List<String> {
         return when (currentStatus.uppercase()) {
             STATUS_OPEN -> listOf(
                 STATUS_PENDING,
                 STATUS_AWAITING_SECURITY_HANDOVER,
+                STATUS_RESOLVED,
                 STATUS_CLOSED
             )
             STATUS_PENDING -> listOf(
-                STATUS_AWAITING_SECURITY_HANDOVER,
                 STATUS_OPEN,
+                STATUS_AWAITING_SECURITY_HANDOVER,
+                STATUS_WITH_SECURITY,
+                STATUS_RESOLVED,
                 STATUS_CLOSED
             )
             STATUS_AWAITING_SECURITY_HANDOVER -> listOf(
                 STATUS_WITH_SECURITY,
                 STATUS_OPEN,
+                STATUS_RESOLVED,
                 STATUS_CLOSED
             )
             STATUS_WITH_SECURITY -> listOf(
                 STATUS_AWAITING_OWNER_COLLECTION,
                 STATUS_RETURNED_TO_OWNER,
+                STATUS_RESOLVED,
                 STATUS_CLOSED
             )
             STATUS_AWAITING_OWNER_COLLECTION -> listOf(
                 STATUS_RETURNED_TO_OWNER,
                 STATUS_WITH_SECURITY,
+                STATUS_RESOLVED,
                 STATUS_CLOSED
             )
             STATUS_RETURNED_TO_OWNER -> listOf(
                 STATUS_RESOLVED,
-                STATUS_CLOSED
+                STATUS_CLOSED,
+                STATUS_OPEN
             )
             STATUS_RESOLVED -> listOf(
-                STATUS_OPEN // Administrative correction
+                STATUS_OPEN, // Administrative reopen
+                STATUS_CLOSED
             )
             STATUS_CLOSED -> listOf(
-                STATUS_OPEN // Administrative reopen
+                STATUS_OPEN, // Administrative reopen
+                STATUS_RESOLVED
             )
-            else -> listOf(STATUS_OPEN, STATUS_CLOSED)
+            else -> ALL_STATUSES
         }
     }
 
-    fun isValidTransition(from: String, to: String): Boolean {
+    /**
+     * Checks if transitioning from [from] to [to] is permitted.
+     * When [isAdmin] is true, allows transitioning to any valid system status.
+     */
+    fun isValidTransition(from: String, to: String, isAdmin: Boolean = false): Boolean {
         if (from.equals(to, ignoreCase = true)) return true
+        if (isAdmin && ALL_STATUSES.any { it.equals(to, ignoreCase = true) }) return true
         return getAllowedTransitions(from).any { it.equals(to, ignoreCase = true) }
     }
 }

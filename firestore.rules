@@ -15,7 +15,8 @@ service cloud.firestore {
     function isAdmin() {
       return isAuthenticated() &&
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'ADMIN';
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'ADMIN' ||
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
     }
 
     // =========================================================================
@@ -29,7 +30,7 @@ service cloud.firestore {
       // Role is restricted to 'USER' on client creation to prevent self-promotion
       allow create: if isOwner(userId)
                     && request.resource.data.uid == userId
-                    && request.resource.data.role == 'USER'
+                    && (request.resource.data.role == 'USER' || request.resource.data.role == 'user')
                     && request.resource.data.createdAt == request.time;
 
       // Users can update their profile information (name, photoUrl),
@@ -61,7 +62,6 @@ service cloud.firestore {
                     && request.resource.data.location is string
                     && request.resource.data.location.size() > 0
                     && request.resource.data.imageUrl is string
-                    && request.resource.data.imageUrl.size() > 0
                     && request.resource.data.imagePublicId is string
                     && request.resource.data.keys().hasOnly([
                          'ownerUid', 'type', 'title', 'description',
@@ -71,28 +71,28 @@ service cloud.firestore {
 
       // Updates:
       // Case 1: Post owner can update their post without altering ownerUid or createdAt
-      // Case 2: Authorized ADMIN can update post status (including security custody transitions)
+      // Case 2: Authorized ADMIN can update post status (including security custody transitions) and post details
       allow update: if isAuthenticated()
                     && (
                       // Normal Owner Update
-                      (resource.data.ownerUid == request.auth.uid
-                       && request.resource.data.ownerUid == resource.data.ownerUid
-                       && request.resource.data.createdAt == resource.data.createdAt
+                      ((resource.data.ownerUid == request.auth.uid || resource.data.userId == request.auth.uid)
+                       && (!('ownerUid' in resource.data) || request.resource.data.ownerUid == resource.data.ownerUid)
+                       && (!('createdAt' in resource.data) || request.resource.data.createdAt == resource.data.createdAt)
                        && (request.resource.data.status == 'OPEN' ||
                            request.resource.data.status == 'PENDING' ||
                            request.resource.data.status == 'RESOLVED' ||
                            request.resource.data.status == 'CLOSED')
                        && (request.resource.data.type == 'LOST' || request.resource.data.type == 'FOUND')
                        && request.resource.data.keys().hasOnly([
-                            'ownerUid', 'type', 'title', 'description',
+                            'ownerUid', 'userId', 'type', 'title', 'description',
                             'category', 'location', 'imageUrl', 'imagePublicId',
                             'status', 'createdAt', 'updatedAt'
                           ]))
                       ||
-                      // Admin Case Custody / Status Update
+                      // Admin Case Custody / Status / Record Update
                       (isAdmin()
-                       && request.resource.data.ownerUid == resource.data.ownerUid
-                       && request.resource.data.createdAt == resource.data.createdAt
+                       && (!('ownerUid' in resource.data) || request.resource.data.ownerUid == resource.data.ownerUid)
+                       && (!('createdAt' in resource.data) || request.resource.data.createdAt == resource.data.createdAt)
                        && request.resource.data.status in [
                             'OPEN', 'PENDING', 'AWAITING_SECURITY_HANDOVER',
                             'WITH_SECURITY', 'AWAITING_OWNER_COLLECTION',
@@ -102,7 +102,7 @@ service cloud.firestore {
 
       // Post owner or Admin can delete post
       allow delete: if isAuthenticated()
-                    && (resource.data.ownerUid == request.auth.uid || isAdmin());
+                    && (resource.data.ownerUid == request.auth.uid || resource.data.userId == request.auth.uid || isAdmin());
     }
 
     // =========================================================================

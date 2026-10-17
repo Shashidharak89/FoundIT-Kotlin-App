@@ -170,7 +170,7 @@ class AdminRepository(
         adminName: String
     ): Result<Unit> {
         return try {
-            require(CaseLifecycle.isValidTransition(previousStatus, newStatus)) {
+            require(CaseLifecycle.isValidTransition(previousStatus, newStatus, isAdmin = true)) {
                 "Invalid status transition from $previousStatus to $newStatus"
             }
             require(reason.isNotBlank()) { "An administrative reason is required for status changes" }
@@ -181,23 +181,91 @@ class AdminRepository(
             )
             firestore.collection(POSTS_COLLECTION).document(postId).update(postUpdates).await()
 
-            // Create Audit Log
-            val logEntry = AuditLogEntry(
-                actorUid = adminUid,
-                actorName = adminName,
-                action = AuditLogEntry.ACTION_STATUS_CHANGE,
-                entityType = AuditLogEntry.ENTITY_POST,
-                entityId = postId,
-                previousStatus = previousStatus,
-                newStatus = newStatus,
-                reason = reason.trim()
-            )
-            createAuditLogInternal(logEntry)
+            // Create Audit Log (resilient so audit failure does not fail the primary update)
+            try {
+                val logEntry = AuditLogEntry(
+                    actorUid = adminUid,
+                    actorName = adminName,
+                    action = AuditLogEntry.ACTION_STATUS_CHANGE,
+                    entityType = AuditLogEntry.ENTITY_POST,
+                    entityId = postId,
+                    previousStatus = previousStatus,
+                    newStatus = newStatus,
+                    reason = reason.trim()
+                )
+                createAuditLogInternal(logEntry)
+            } catch (auditErr: Exception) {
+                Log.w(TAG, "Post status updated to $newStatus, but audit log creation failed: ${auditErr.message}")
+            }
 
             Log.d(TAG, "Admin updated post $postId status: $previousStatus -> $newStatus (reason: $reason)")
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to update case status: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Admin post details modification.
+     * Updates editable fields and preserves existing metadata.
+     */
+    suspend fun updatePostDetails(
+        postId: String,
+        title: String,
+        description: String,
+        category: String,
+        location: String,
+        type: String,
+        status: String,
+        imageUrl: String,
+        imagePublicId: String,
+        adminUid: String,
+        adminName: String,
+        reason: String = "Admin post modification"
+    ): Result<Unit> {
+        return try {
+            require(title.isNotBlank()) { "Title cannot be blank" }
+            require(location.isNotBlank()) { "Location cannot be blank" }
+
+            val docRef = firestore.collection(POSTS_COLLECTION).document(postId)
+            val currentDoc = docRef.get().await()
+            val previousStatus = currentDoc.getString("status") ?: "OPEN"
+
+            val updates = hashMapOf<String, Any>(
+                "title" to title.trim(),
+                "description" to description.trim(),
+                "category" to category,
+                "location" to location.trim(),
+                "type" to type,
+                "status" to status,
+                "imageUrl" to imageUrl,
+                "imagePublicId" to imagePublicId,
+                "updatedAt" to FieldValue.serverTimestamp()
+            )
+
+            docRef.update(updates).await()
+
+            try {
+                val logEntry = AuditLogEntry(
+                    actorUid = adminUid,
+                    actorName = adminName,
+                    action = AuditLogEntry.ACTION_STATUS_CHANGE,
+                    entityType = AuditLogEntry.ENTITY_POST,
+                    entityId = postId,
+                    previousStatus = previousStatus,
+                    newStatus = status,
+                    reason = reason.trim().ifBlank { "Post edited by Admin" }
+                )
+                createAuditLogInternal(logEntry)
+            } catch (auditErr: Exception) {
+                Log.w(TAG, "Post $postId updated, but audit log failed: ${auditErr.message}")
+            }
+
+            Log.d(TAG, "Admin updated post $postId details successfully")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to update post details for $postId: ${e.message}", e)
             Result.failure(e)
         }
     }

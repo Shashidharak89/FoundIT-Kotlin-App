@@ -7,8 +7,11 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.shashidhara.foundit.data.model.PostItem
 import com.shashidhara.foundit.data.model.PostRequest
+import com.shashidhara.foundit.data.repository.CloudinaryRepository
 import com.shashidhara.foundit.data.repository.PostRepository
 import com.shashidhara.foundit.data.repository.RequestRepository
+import android.content.Context
+import android.net.Uri
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -48,7 +51,8 @@ data class DashboardUiState(
 
 class DashboardViewModel(
     private val postRepository: PostRepository = PostRepository(),
-    private val requestRepository: RequestRepository = RequestRepository()
+    private val requestRepository: RequestRepository = RequestRepository(),
+    private val cloudinaryRepository: CloudinaryRepository = CloudinaryRepository()
 ) : ViewModel() {
 
     companion object {
@@ -239,16 +243,47 @@ class DashboardViewModel(
         category: String,
         location: String,
         status: String,
+        type: String? = null,
+        existingImageUrl: String? = null,
+        existingImagePublicId: String? = null,
+        newMediaUri: Uri? = null,
+        clearMedia: Boolean = false,
+        context: Context? = null,
         onSuccess: () -> Unit
     ) {
         viewModelScope.launch {
+            var finalImageUrl = existingImageUrl
+            var finalPublicId = existingImagePublicId
+
+            if (clearMedia) {
+                finalImageUrl = ""
+                finalPublicId = ""
+            } else if (newMediaUri != null && context != null) {
+                val uploadResult = cloudinaryRepository.uploadMedia(context, newMediaUri, isVideo = false)
+                if (uploadResult.isSuccess) {
+                    val media = uploadResult.getOrNull()
+                    if (media != null) {
+                        finalImageUrl = media.secureUrl
+                        finalPublicId = media.publicId
+                    }
+                } else {
+                    _uiState.update {
+                        it.copy(actionError = "Media upload failed: ${uploadResult.exceptionOrNull()?.message}")
+                    }
+                    return@launch
+                }
+            }
+
             val result = postRepository.updatePost(
                 postId = postId,
                 title = title,
                 description = description,
                 category = category,
                 location = location,
-                status = status
+                status = status,
+                type = type,
+                imageUrl = finalImageUrl,
+                imagePublicId = finalPublicId
             )
 
             if (result.isSuccess) {

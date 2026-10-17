@@ -61,6 +61,7 @@ class PostRepository(
 
     /**
      * Updates an existing post. Protected fields (ownerUid, createdAt) are never changed.
+     * Supports updating title, description, category, location, status, type, and media.
      */
     suspend fun updatePost(
         postId: String,
@@ -68,7 +69,10 @@ class PostRepository(
         description: String,
         category: String,
         location: String,
-        status: String
+        status: String,
+        type: String? = null,
+        imageUrl: String? = null,
+        imagePublicId: String? = null
     ): Result<Unit> {
         return try {
             val updates = hashMapOf<String, Any>(
@@ -79,6 +83,15 @@ class PostRepository(
                 "status" to status,
                 "updatedAt" to FieldValue.serverTimestamp()
             )
+            if (!type.isNullOrBlank()) {
+                updates["type"] = type
+            }
+            if (imageUrl != null) {
+                updates["imageUrl"] = imageUrl
+            }
+            if (imagePublicId != null) {
+                updates["imagePublicId"] = imagePublicId
+            }
 
             firestore.collection(POSTS_COLLECTION).document(postId).update(updates).await()
             Log.d(TAG, "Post $postId updated successfully")
@@ -201,21 +214,27 @@ class PostRepository(
             val cleanType = if (typeFilter == "ALL" || typeFilter.isNullOrBlank()) null else typeFilter
             val cleanStatus = if (statusFilter == "ALL" || statusFilter.isNullOrBlank()) null else statusFilter
 
-            // Direct server-side filter by ownerUid
-            var query: Query = firestore.collection(POSTS_COLLECTION)
+            // Direct server-side filter by ownerUid (uses single-field index, no composite index required)
+            val snapshot = firestore.collection(POSTS_COLLECTION)
                 .whereEqualTo("ownerUid", ownerUid)
-                .orderBy("createdAt", Query.Direction.DESCENDING)
+                .get()
+                .await()
 
-            if (page > 1 && lastSnapshot != null) {
-                query = query.startAfter(lastSnapshot)
+            var rawDocs = snapshot.documents
+            // Fallback for legacy records created with "userId" instead of "ownerUid"
+            if (rawDocs.isEmpty()) {
+                val legacySnapshot = firestore.collection(POSTS_COLLECTION)
+                    .whereEqualTo("userId", ownerUid)
+                    .get()
+                    .await()
+                if (!legacySnapshot.isEmpty) {
+                    rawDocs = legacySnapshot.documents
+                }
             }
 
-            val needsClientFiltering = cleanQuery.isNotBlank() || cleanCategory != null || cleanType != null || cleanStatus != null
-            val fetchLimit = if (needsClientFiltering) (pageSize * 3).toLong() else pageSize.toLong()
-
-            val snapshot = query.limit(fetchLimit).get().await()
-            val rawDocs = snapshot.documents
+            // Parse and sort by createdAt descending in memory (immune to missing composite index)
             val allMyPosts = rawDocs.mapNotNull { parsePost(it) }
+                .sortedByDescending { it.createdAt?.seconds ?: 0L }
 
             val filtered = allMyPosts.filter { post ->
                 val matchesCategory = cleanCategory == null || post.category.equals(cleanCategory, ignoreCase = true)
@@ -229,14 +248,16 @@ class PostRepository(
                 matchesCategory && matchesType && matchesStatus && matchesSearch
             }
 
-            val newLastDoc = rawDocs.lastOrNull()
-            val hasMore = rawDocs.size.toLong() >= fetchLimit
+            val fromIndex = ((page - 1) * pageSize).coerceAtLeast(0)
+            val toIndex = (fromIndex + pageSize).coerceAtMost(filtered.size)
+            val pageItems = if (fromIndex < filtered.size) filtered.subList(fromIndex, toIndex) else emptyList()
+            val hasMore = toIndex < filtered.size
 
-            Log.d(TAG, "My Posts: Page=$page, Filtered=${filtered.size}, Raw=${rawDocs.size}, hasMore=$hasMore")
+            Log.d(TAG, "My Posts: Page=$page, FilteredTotal=${filtered.size}, PageCount=${pageItems.size}, hasMore=$hasMore")
             Result.success(
                 PaginatedPosts(
-                    posts = filtered,
-                    lastSnapshot = newLastDoc,
+                    posts = pageItems,
+                    lastSnapshot = null,
                     hasMore = hasMore,
                     page = page
                 )
@@ -259,7 +280,6 @@ class PostRepository(
 
         val registration = firestore.collection(POSTS_COLLECTION)
             .whereEqualTo("ownerUid", ownerUid)
-            .orderBy("createdAt", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     Log.e(TAG, "Error listening to user posts: ${error.message}", error)
@@ -267,7 +287,10 @@ class PostRepository(
                     return@addSnapshotListener
                 }
 
-                val posts = snapshot?.documents?.mapNotNull { parsePost(it) } ?: emptyList()
+                val posts = snapshot?.documents
+                    ?.mapNotNull { parsePost(it) }
+                    ?.sortedByDescending { it.createdAt?.seconds ?: 0L }
+                    ?: emptyList()
                 trySend(posts)
             }
 

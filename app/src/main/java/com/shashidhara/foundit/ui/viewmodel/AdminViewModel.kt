@@ -78,6 +78,7 @@ data class AdminUiState(
 
     // Dialog & Feedback
     val selectedCaseForStatus: PostItem? = null,
+    val selectedCaseForEdit: PostItem? = null,
     val selectedCaseForReceipt: PostItem? = null,
     val selectedCaseForReturn: PostItem? = null,
     val selectedCaseForTimeline: PostItem? = null,
@@ -210,6 +211,10 @@ class AdminViewModel(
         _uiState.update { it.copy(selectedCaseForStatus = caseItem) }
     }
 
+    fun selectCaseForEdit(caseItem: PostItem?) {
+        _uiState.update { it.copy(selectedCaseForEdit = caseItem) }
+    }
+
     fun selectCaseForReceipt(caseItem: PostItem?) {
         _uiState.update { it.copy(selectedCaseForReceipt = caseItem) }
     }
@@ -260,6 +265,84 @@ class AdminViewModel(
                     it.copy(
                         isActionInProgress = false,
                         actionError = error.localizedMessage ?: "Failed to update status"
+                    )
+                }
+            }
+        }
+    }
+
+    fun submitPostEdit(
+        postId: String,
+        title: String,
+        description: String,
+        category: String,
+        location: String,
+        type: String,
+        status: String,
+        existingImageUrl: String,
+        existingImagePublicId: String,
+        newMediaUri: Uri?,
+        clearMedia: Boolean,
+        context: Context?,
+        reason: String
+    ) {
+        val currentUser = auth.currentUser ?: return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isActionInProgress = true, actionError = null) }
+
+            var finalImageUrl = existingImageUrl
+            var finalPublicId = existingImagePublicId
+
+            if (clearMedia) {
+                finalImageUrl = ""
+                finalPublicId = ""
+            } else if (newMediaUri != null && context != null) {
+                val uploadResult = cloudinaryRepository.uploadMedia(context, newMediaUri, isVideo = false)
+                if (uploadResult.isSuccess) {
+                    val media = uploadResult.getOrNull()
+                    if (media != null) {
+                        finalImageUrl = media.secureUrl
+                        finalPublicId = media.publicId
+                    }
+                } else {
+                    _uiState.update {
+                        it.copy(
+                            isActionInProgress = false,
+                            actionError = "Media upload failed: ${uploadResult.exceptionOrNull()?.message}"
+                        )
+                    }
+                    return@launch
+                }
+            }
+
+            adminRepository.updatePostDetails(
+                postId = postId,
+                title = title,
+                description = description,
+                category = category,
+                location = location,
+                type = type,
+                status = status,
+                imageUrl = finalImageUrl,
+                imagePublicId = finalPublicId,
+                adminUid = currentUser.uid,
+                adminName = currentUser.displayName ?: "Admin",
+                reason = reason.ifBlank { "Post modified by Admin" }
+            ).onSuccess {
+                _uiState.update {
+                    it.copy(
+                        isActionInProgress = false,
+                        selectedCaseForEdit = null,
+                        actionMessage = "Post updated successfully!"
+                    )
+                }
+                loadCases(reset = true)
+                loadMetrics()
+            }.onFailure { error ->
+                _uiState.update {
+                    it.copy(
+                        isActionInProgress = false,
+                        actionError = error.localizedMessage ?: "Failed to update post details"
                     )
                 }
             }
