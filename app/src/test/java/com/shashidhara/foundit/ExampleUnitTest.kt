@@ -4,6 +4,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import com.shashidhara.foundit.MainActivity
 import com.shashidhara.foundit.ui.FoundITApp
 import com.shashidhara.foundit.ui.screens.AccountScreen
+import com.shashidhara.foundit.ui.screens.CreatePostScreen
 import com.shashidhara.foundit.ui.screens.HomeScreen
 import com.shashidhara.foundit.ui.theme.FoundITTheme
 import android.content.Context
@@ -72,6 +73,19 @@ class ExampleUnitTest {
         composeTestRule.setContent {
             FoundITTheme {
                 FoundITApp()
+            }
+        }
+    }
+
+    @Test
+    fun testCreatePostScreenRendersWithoutCrash() {
+        composeTestRule.setContent {
+            FoundITTheme {
+                CreatePostScreen(
+                    postViewModel = com.shashidhara.foundit.ui.viewmodel.PostViewModel(),
+                    currentUser = null,
+                    onPostCreated = {}
+                )
             }
         }
     }

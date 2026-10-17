@@ -16,6 +16,13 @@ sealed class Screen(
         icon = FoundITIcons.Home
     )
 
+    data object CreatePost : Screen(
+        route = "create_post",
+        title = "Report Item",
+        subtitle = "Publish lost or found post",
+        icon = FoundITIcons.Add
+    )
+
     data object MyAccount : Screen(
         route = "my_account",
         title = "My Account",
@@ -25,6 +32,6 @@ sealed class Screen(
 
     companion object {
         val sidebarItems: List<Screen>
-            get() = listOf(Home, MyAccount)
+            get() = listOf(Home, CreatePost, MyAccount)
     }
 }

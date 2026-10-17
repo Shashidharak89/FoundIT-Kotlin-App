@@ -26,9 +26,11 @@ import com.shashidhara.foundit.ui.components.FoundITSidebar
 import com.shashidhara.foundit.ui.components.FoundITTopBar
 import com.shashidhara.foundit.ui.navigation.Screen
 import com.shashidhara.foundit.ui.screens.AccountScreen
+import com.shashidhara.foundit.ui.screens.CreatePostScreen
 import com.shashidhara.foundit.ui.screens.HomeScreen
 import com.shashidhara.foundit.ui.theme.CyberTealDarkest
 import com.shashidhara.foundit.ui.viewmodel.AuthViewModel
+import com.shashidhara.foundit.ui.viewmodel.PostViewModel
 import kotlinx.coroutines.launch
 
 /**
@@ -38,21 +40,25 @@ import kotlinx.coroutines.launch
  */
 @Composable
 fun FoundITApp(
-    authViewModel: AuthViewModel = viewModel()
+    authViewModel: AuthViewModel = viewModel(),
+    postViewModel: PostViewModel = viewModel()
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     var currentScreen by remember { mutableStateOf<Screen>(Screen.Home) }
+    var initialCreatePostType by remember { mutableStateOf("LOST") }
 
     val authState by authViewModel.authState.collectAsState()
     val currentUserProfile = (authState as? AuthState.Authenticated)?.profile
 
-    // Intercept back button safely only when an OnBackPressedDispatcherOwner is present
+    // Intercept back button safely: close drawer first, or navigate to Home if on another screen
     val backDispatcherOwner = LocalOnBackPressedDispatcherOwner.current
     if (backDispatcherOwner != null) {
-        BackHandler(enabled = drawerState.isOpen) {
-            scope.launch {
-                drawerState.close()
+        BackHandler(enabled = drawerState.isOpen || currentScreen != Screen.Home) {
+            if (drawerState.isOpen) {
+                scope.launch { drawerState.close() }
+            } else {
+                currentScreen = Screen.Home
             }
         }
     }
@@ -105,7 +111,21 @@ fun FoundITApp(
                     label = "pageTransition"
                 ) { screen ->
                     when (screen) {
-                        is Screen.Home -> HomeScreen()
+                        is Screen.Home -> HomeScreen(
+                            postViewModel = postViewModel,
+                            onNavigateToCreatePost = { postType ->
+                                initialCreatePostType = postType
+                                currentScreen = Screen.CreatePost
+                            }
+                        )
+                        is Screen.CreatePost -> CreatePostScreen(
+                            postViewModel = postViewModel,
+                            currentUser = currentUserProfile,
+                            initialPostType = initialCreatePostType,
+                            onPostCreated = {
+                                currentScreen = Screen.Home
+                            }
+                        )
                         is Screen.MyAccount -> AccountScreen(authViewModel = authViewModel)
                     }
                 }

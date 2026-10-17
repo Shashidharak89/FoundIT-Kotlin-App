@@ -369,5 +369,138 @@ object FoundITIcons {
             }
         }.build()
     }
+
+    val Play: ImageVector by lazy {
+        ImageVector.Builder(
+            name = "Play",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f
+        ).apply {
+            path(fill = SolidColor(Color.White)) {
+                moveTo(8f, 5f)
+                verticalLineTo(19f)
+                lineTo(19f, 12f)
+                close()
+            }
+        }.build()
+    }
+
+    val Video: ImageVector by lazy {
+        ImageVector.Builder(
+            name = "Video",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f
+        ).apply {
+            path(fill = SolidColor(Color.White)) {
+                moveTo(17f, 10.5f)
+                verticalLineTo(7f)
+                curveTo(17f, 6.45f, 16.55f, 6f, 16f, 6f)
+                horizontalLineTo(4f)
+                curveTo(3.45f, 6f, 3f, 6.45f, 3f, 7f)
+                verticalLineTo(17f)
+                curveTo(3f, 17.55f, 3.45f, 18f, 4f, 18f)
+                horizontalLineTo(16f)
+                curveTo(16.55f, 18f, 17f, 17.55f, 17f, 17f)
+                verticalLineTo(13.5f)
+                lineTo(21f, 17.5f)
+                verticalLineTo(6.5f)
+                lineTo(17f, 10.5f)
+                close()
+            }
+        }.build()
+    }
+
+    val MediaImage: ImageVector by lazy {
+        ImageVector.Builder(
+            name = "MediaImage",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f
+        ).apply {
+            path(fill = SolidColor(Color.White)) {
+                moveTo(21f, 19f)
+                verticalLineTo(5f)
+                curveTo(21f, 3.9f, 20.1f, 3f, 19f, 3f)
+                horizontalLineTo(5f)
+                curveTo(3.9f, 3f, 3f, 3.9f, 3f, 5f)
+                verticalLineTo(19f)
+                curveTo(3f, 20.1f, 3.9f, 21f, 5f, 21f)
+                horizontalLineTo(19f)
+                curveTo(20.1f, 21f, 21f, 20.1f, 21f, 19f)
+                close()
+                moveTo(8.5f, 13.5f)
+                lineTo(11f, 16.51f)
+                lineTo(14.5f, 12f)
+                lineTo(19f, 18f)
+                horizontalLineTo(5f)
+                lineTo(8.5f, 13.5f)
+                close()
+            }
+        }.build()
+    }
+
+    val CloudUpload: ImageVector by lazy {
+        ImageVector.Builder(
+            name = "CloudUpload",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f
+        ).apply {
+            path(fill = SolidColor(Color.White)) {
+                moveTo(19.35f, 10.04f)
+                curveTo(18.67f, 6.59f, 15.64f, 4f, 12f, 4f)
+                curveTo(9.11f, 4f, 6.6f, 5.64f, 5.35f, 8.04f)
+                curveTo(2.34f, 8.36f, 0f, 10.91f, 0f, 14f)
+                curveTo(0f, 17.31f, 2.69f, 20f, 6f, 20f)
+                horizontalLineTo(19f)
+                curveTo(21.76f, 20f, 24f, 17.76f, 24f, 15f)
+                curveTo(24f, 12.36f, 21.95f, 10.22f, 19.35f, 10.04f)
+                close()
+                moveTo(14f, 13f)
+                verticalLineTo(17f)
+                horizontalLineTo(10f)
+                verticalLineTo(13f)
+                horizontalLineTo(7f)
+                lineTo(12f, 8f)
+                lineTo(17f, 13f)
+                horizontalLineTo(14f)
+                close()
+            }
+        }.build()
+    }
+
+    val Refresh: ImageVector by lazy {
+        ImageVector.Builder(
+            name = "Refresh",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f
+        ).apply {
+            path(fill = SolidColor(Color.White)) {
+                moveTo(17.65f, 6.35f)
+                curveTo(16.2f, 4.9f, 14.21f, 4f, 12f, 4f)
+                curveTo(7.58f, 4f, 4.01f, 7.58f, 4.01f, 12f)
+                curveTo(4.01f, 16.42f, 7.58f, 20f, 12f, 20f)
+                curveTo(15.73f, 20f, 18.84f, 17.45f, 19.73f, 14f)
+                horizontalLineTo(17.65f)
+                curveTo(16.83f, 16.33f, 14.61f, 18f, 12f, 18f)
+                curveTo(8.69f, 18f, 6f, 15.31f, 6f, 12f)
+                curveTo(6f, 8.69f, 8.69f, 6f, 12f, 6f)
+                curveTo(13.66f, 6f, 15.14f, 6.69f, 16.22f, 7.78f)
+                lineTo(13f, 11f)
+                horizontalLineTo(20f)
+                verticalLineTo(4f)
+                lineTo(17.65f, 6.35f)
+                close()
+            }
+        }.build()
+    }
 }
 
