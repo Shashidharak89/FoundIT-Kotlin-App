@@ -5,6 +5,7 @@ import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.auth.FirebaseAuth
 import com.shashidhara.foundit.data.model.PostItem
 import com.shashidhara.foundit.data.model.UserProfile
 import com.shashidhara.foundit.data.repository.CloudinaryRepository
@@ -127,8 +128,9 @@ class PostViewModel(
      * 3. Saves post to Firestore.
      * If Firestore saving fails, the uploaded media result is preserved so the user can retry without re-uploading.
      */
-    fun submitPost(context: Context, currentUser: UserProfile?) {
-        if (currentUser == null) {
+    fun submitPost(context: Context, currentUser: UserProfile? = null) {
+        val authUser = FirebaseAuth.getInstance().currentUser
+        if (authUser == null) {
             _submissionState.value = SubmissionState.Error(
                 message = "Please sign in with Google to create a post.",
                 canRetrySave = false
@@ -136,7 +138,11 @@ class PostViewModel(
             return
         }
 
-        if (_title.value.isBlank()) {
+        val ownerUid = authUser.uid
+        val trimmedTitle = _title.value.trim()
+        val trimmedLocation = _location.value.trim()
+
+        if (trimmedTitle.isBlank()) {
             _submissionState.value = SubmissionState.Error(
                 message = "Please enter an item title.",
                 canRetrySave = false
@@ -144,7 +150,7 @@ class PostViewModel(
             return
         }
 
-        if (_location.value.isBlank()) {
+        if (trimmedLocation.isBlank()) {
             _submissionState.value = SubmissionState.Error(
                 message = "Please specify the location.",
                 canRetrySave = false
@@ -201,25 +207,23 @@ class PostViewModel(
                 return@launch
             }
 
-            // Step 2: Save to Firestore
+            // Step 2: Save to Firestore matching the exact schema required by security rules
             _submissionState.value = SubmissionState.SavingToFirestore
+            val cleanType = if (_postType.value.equals("FOUND", ignoreCase = true)) "FOUND" else "LOST"
+
             val postItem = PostItem(
-                title = _title.value,
-                description = _description.value,
-                category = _category.value,
-                location = _location.value,
-                postType = _postType.value,
-                userId = currentUser.uid,
-                authorName = currentUser.name.ifBlank { "Community Member" },
-                authorPhotoUrl = currentUser.photoUrl,
+                ownerUid = ownerUid,
+                type = cleanType,
+                title = trimmedTitle,
+                description = _description.value.trim(),
+                category = _category.value.ifBlank { "Other" },
+                location = trimmedLocation,
                 imageUrl = mediaResult.secureUrl,
                 imagePublicId = mediaResult.publicId,
-                videoUrl = if (mediaResult.resourceType == "video") mediaResult.secureUrl else "",
-                mediaUrl = mediaResult.secureUrl,
-                mediaPublicId = mediaResult.publicId,
-                resourceType = mediaResult.resourceType
+                status = "OPEN"
             )
 
+            Log.d(TAG, "Initiating Firestore write for ownerUid=$ownerUid, type=$cleanType, status=OPEN")
             val firestoreResult = postRepository.createPost(postItem)
             if (firestoreResult.isSuccess) {
                 Log.d(TAG, "Post saved to Firestore with ID: ${firestoreResult.getOrNull()}")

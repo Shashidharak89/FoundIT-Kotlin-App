@@ -3,31 +3,49 @@ package com.shashidhara.foundit.data.model
 import com.google.firebase.Timestamp
 
 /**
- * Represents a community Lost or Found post stored in Cloud Firestore.
- * Keeps imageUrl and imagePublicId for full backward compatibility,
- * while supporting videoUrl and mediaUrl for image/video media from Cloudinary.
+ * Represents a community Lost or Found post in Cloud Firestore.
+ * Strictly adheres to the 10 allowed fields in Firestore security rules:
+ * - ownerUid
+ * - type (LOST or FOUND)
+ * - title
+ * - description
+ * - category
+ * - location
+ * - imageUrl
+ * - imagePublicId
+ * - status (OPEN)
+ * - createdAt
  */
 data class PostItem(
     val id: String = "",
+    val ownerUid: String = "",
+    val type: String = "LOST", // "LOST" or "FOUND"
     val title: String = "",
     val description: String = "",
     val category: String = "Other",
     val location: String = "",
-    val postType: String = "LOST", // "LOST" or "FOUND"
-    val userId: String = "",
-    val authorName: String = "",
-    val authorPhotoUrl: String = "",
-    val imageUrl: String = "",       // Kept compatible with legacy rules
-    val imagePublicId: String = "",  // Kept compatible with legacy rules
-    val videoUrl: String = "",       // Populated when resourceType == "video"
-    val mediaUrl: String = "",       // Canonical media secure_url from Cloudinary
-    val mediaPublicId: String = "",  // Canonical media public_id from Cloudinary
-    val resourceType: String = "image", // "image" or "video"
+    val imageUrl: String = "",
+    val imagePublicId: String = "",
+    val status: String = "OPEN",
     val createdAt: Timestamp? = null
 ) {
+    // UI convenience properties
     val isVideo: Boolean
-        get() = resourceType == "video"
+        get() = imageUrl.contains("/video/") ||
+                imageUrl.endsWith(".mp4", ignoreCase = true) ||
+                imageUrl.endsWith(".mov", ignoreCase = true) ||
+                imageUrl.endsWith(".webm", ignoreCase = true) ||
+                imageUrl.endsWith(".mkv", ignoreCase = true)
 
     val displayMediaUrl: String
-        get() = mediaUrl.ifBlank { if (isVideo) videoUrl else imageUrl }
+        get() = imageUrl
+
+    val postType: String
+        get() = type
+
+    val userId: String
+        get() = ownerUid
+
+    val authorName: String
+        get() = if (ownerUid.isNotBlank()) "User #${ownerUid.take(6)}" else "Community Member"
 }

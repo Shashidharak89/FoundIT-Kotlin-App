@@ -19,32 +19,40 @@ class PostRepository(
     }
 
     /**
-     * Creates a new post in Firestore under collection 'posts'.
-     * Sets serverTimestamp for createdAt.
-     * Retains imageUrl and imagePublicId alongside videoUrl and mediaUrl.
+     * Creates a new post document in Firestore strictly containing the 10 allowed fields:
+     * - ownerUid
+     * - type (LOST or FOUND)
+     * - title
+     * - description
+     * - category
+     * - location
+     * - imageUrl
+     * - imagePublicId
+     * - status (OPEN)
+     * - createdAt (FieldValue.serverTimestamp())
      */
     suspend fun createPost(post: PostItem): Result<String> {
         return try {
-            val postData = hashMapOf(
+            val postData = hashMapOf<String, Any>(
+                "ownerUid" to post.ownerUid,
+                "type" to post.type,
                 "title" to post.title.trim(),
                 "description" to post.description.trim(),
                 "category" to post.category,
                 "location" to post.location.trim(),
-                "postType" to post.postType,
-                "userId" to post.userId,
-                "authorName" to post.authorName,
-                "authorPhotoUrl" to post.authorPhotoUrl,
                 "imageUrl" to post.imageUrl,
                 "imagePublicId" to post.imagePublicId,
-                "videoUrl" to post.videoUrl,
-                "mediaUrl" to post.mediaUrl,
-                "mediaPublicId" to post.mediaPublicId,
-                "resourceType" to post.resourceType,
+                "status" to "OPEN",
                 "createdAt" to FieldValue.serverTimestamp()
             )
 
+            Log.d(
+                TAG,
+                "Submitting Firestore post payload: keys=${postData.keys.sorted()}, ownerUid=${post.ownerUid}, type=${post.type}, status=${postData["status"]}"
+            )
+
             val docRef = firestore.collection(POSTS_COLLECTION).add(postData).await()
-            Log.d(TAG, "Post created successfully with ID: ${docRef.id}")
+            Log.d(TAG, "Post created successfully with Firestore document ID: ${docRef.id}")
             Result.success(docRef.id)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to create post in Firestore: ${e.message}", e)
@@ -70,20 +78,15 @@ class PostRepository(
                         try {
                             PostItem(
                                 id = doc.id,
+                                ownerUid = doc.getString("ownerUid") ?: doc.getString("userId").orEmpty(),
+                                type = doc.getString("type") ?: doc.getString("postType") ?: "LOST",
                                 title = doc.getString("title").orEmpty(),
                                 description = doc.getString("description").orEmpty(),
                                 category = doc.getString("category") ?: "Other",
                                 location = doc.getString("location").orEmpty(),
-                                postType = doc.getString("postType") ?: "LOST",
-                                userId = doc.getString("userId").orEmpty(),
-                                authorName = doc.getString("authorName").orEmpty(),
-                                authorPhotoUrl = doc.getString("authorPhotoUrl").orEmpty(),
-                                imageUrl = doc.getString("imageUrl").orEmpty(),
-                                imagePublicId = doc.getString("imagePublicId").orEmpty(),
-                                videoUrl = doc.getString("videoUrl").orEmpty(),
-                                mediaUrl = doc.getString("mediaUrl").orEmpty(),
-                                mediaPublicId = doc.getString("mediaPublicId").orEmpty(),
-                                resourceType = doc.getString("resourceType") ?: "image",
+                                imageUrl = doc.getString("imageUrl") ?: doc.getString("mediaUrl").orEmpty(),
+                                imagePublicId = doc.getString("imagePublicId") ?: doc.getString("mediaPublicId").orEmpty(),
+                                status = doc.getString("status") ?: "OPEN",
                                 createdAt = doc.getTimestamp("createdAt")
                             )
                         } catch (e: Exception) {
@@ -101,7 +104,7 @@ class PostRepository(
     }
 
     /**
-     * Deletes a post from Firestore (allowed by security rules if userId matches).
+     * Deletes a post from Firestore (allowed by security rules if ownerUid matches).
      */
     suspend fun deletePost(postId: String): Result<Unit> {
         return try {
