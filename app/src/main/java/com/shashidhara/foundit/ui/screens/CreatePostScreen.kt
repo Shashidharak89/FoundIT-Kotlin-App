@@ -42,7 +42,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -52,21 +52,17 @@ import coil.compose.SubcomposeAsyncImage
 import com.shashidhara.foundit.data.model.UserProfile
 import com.shashidhara.foundit.ui.components.FoundITIcons
 import com.shashidhara.foundit.ui.components.FoundITVideoPlayer
-import com.shashidhara.foundit.ui.theme.AquaFoamBase
-import com.shashidhara.foundit.ui.theme.AquaFoamDark
-import com.shashidhara.foundit.ui.theme.AquaFoamLight
-import com.shashidhara.foundit.ui.theme.AquaFoamLighter
-import com.shashidhara.foundit.ui.theme.AquaFoamMedium
-import com.shashidhara.foundit.ui.theme.AquaFoamMuted
-import com.shashidhara.foundit.ui.theme.CyberTealBase
-import com.shashidhara.foundit.ui.theme.CyberTealDark
-import com.shashidhara.foundit.ui.theme.CyberTealDarker
-import com.shashidhara.foundit.ui.theme.CyberTealDarkest
-import com.shashidhara.foundit.ui.theme.CyberTealElevated
-import com.shashidhara.foundit.ui.theme.CyberTealLight
-import com.shashidhara.foundit.ui.theme.CyberTealMedium
-import com.shashidhara.foundit.ui.theme.CyberTealMuted
-import com.shashidhara.foundit.ui.theme.CyberTealSoft
+import com.shashidhara.foundit.ui.theme.AppBackgroundWhite
+import com.shashidhara.foundit.ui.theme.AppBorderLight
+import com.shashidhara.foundit.ui.theme.AppSurfaceSubtle
+import com.shashidhara.foundit.ui.theme.AppSurfaceWhite
+import com.shashidhara.foundit.ui.theme.BrandMintBase
+import com.shashidhara.foundit.ui.theme.BrandMintBg
+import com.shashidhara.foundit.ui.theme.BrandTealBase
+import com.shashidhara.foundit.ui.theme.ColorPureWhite
+import com.shashidhara.foundit.ui.theme.TextMutedSlate
+import com.shashidhara.foundit.ui.theme.TextPrimaryDark
+import com.shashidhara.foundit.ui.theme.TextSecondarySlate
 import com.shashidhara.foundit.ui.viewmodel.PostViewModel
 import com.shashidhara.foundit.ui.viewmodel.SubmissionState
 
@@ -126,42 +122,32 @@ fun CreatePostScreen(
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .background(CyberTealDarkest),
+            .background(AppBackgroundWhite),
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp)
     ) {
-        // Top Header
+        // Clean White Header Card with subtle border
         item {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(CyberTealDark, CyberTealDarker)
-                        )
-                    )
-                    .border(
-                        1.5.dp,
-                        Brush.linearGradient(
-                            colors = listOf(CyberTealBase, AquaFoamBase.copy(alpha = 0.5f))
-                        ),
-                        RoundedCornerShape(20.dp)
-                    )
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(ColorPureWhite)
+                    .border(1.dp, AppBorderLight, RoundedCornerShape(18.dp))
                     .padding(18.dp)
             ) {
                 Column {
                     Row(
                         modifier = Modifier
                             .clip(RoundedCornerShape(16.dp))
-                            .background(CyberTealMuted)
-                            .border(1.dp, AquaFoamBase.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
+                            .background(BrandMintBg)
+                            .border(1.dp, BrandMintBase.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
                             .padding(horizontal = 10.dp, vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
                             imageVector = FoundITIcons.CloudUpload,
                             contentDescription = null,
-                            tint = AquaFoamBase,
+                            tint = BrandTealBase,
                             modifier = Modifier.size(14.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
@@ -169,7 +155,7 @@ fun CreatePostScreen(
                             text = "CLOUDINARY DIRECT UPLOAD",
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
-                            color = AquaFoamLighter,
+                            color = BrandTealBase,
                             letterSpacing = 1.sp
                         )
                     }
@@ -178,14 +164,15 @@ fun CreatePostScreen(
 
                     Text(
                         text = "Report Lost or Found Item",
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Black,
-                        color = AquaFoamLighter
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = TextPrimaryDark
                     )
+                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = "Add photos or videos with location details to notify the community.",
                         fontSize = 12.sp,
-                        color = AquaFoamMedium,
+                        color = TextSecondarySlate,
                         lineHeight = 16.sp
                     )
                 }
@@ -198,9 +185,9 @@ fun CreatePostScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(CyberTealDark)
-                    .border(1.dp, CyberTealElevated, RoundedCornerShape(16.dp))
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(AppSurfaceSubtle)
+                    .border(1.dp, AppBorderLight, RoundedCornerShape(14.dp))
                     .padding(4.dp),
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
@@ -208,22 +195,17 @@ fun CreatePostScreen(
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(if (isLostSelected) CyberTealBase else CyberTealDark)
-                        .border(
-                            1.dp,
-                            if (isLostSelected) AquaFoamBase else CyberTealDark,
-                            RoundedCornerShape(12.dp)
-                        )
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(if (isLostSelected) BrandTealBase else Color.Transparent)
                         .clickable { postViewModel.setPostType("LOST") }
                         .padding(vertical = 10.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = "I LOST AN ITEM",
-                        fontSize = 13.sp,
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        color = if (isLostSelected) AquaFoamLighter else CyberTealSoft
+                        color = if (isLostSelected) ColorPureWhite else TextSecondarySlate
                     )
                 }
 
@@ -231,22 +213,17 @@ fun CreatePostScreen(
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(if (isFoundSelected) AquaFoamMuted else CyberTealDark)
-                        .border(
-                            1.dp,
-                            if (isFoundSelected) AquaFoamBase else CyberTealDark,
-                            RoundedCornerShape(12.dp)
-                        )
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(if (isFoundSelected) BrandTealBase else Color.Transparent)
                         .clickable { postViewModel.setPostType("FOUND") }
                         .padding(vertical = 10.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = "I FOUND AN ITEM",
-                        fontSize = 13.sp,
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        color = if (isFoundSelected) AquaFoamLighter else CyberTealSoft
+                        color = if (isFoundSelected) ColorPureWhite else TextSecondarySlate
                     )
                 }
             }
@@ -259,7 +236,7 @@ fun CreatePostScreen(
                 text = "MEDIA PROOF (IMAGE OR VIDEO)",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
-                color = CyberTealSoft,
+                color = TextSecondarySlate,
                 letterSpacing = 1.2.sp,
                 modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
             )
@@ -269,10 +246,10 @@ fun CreatePostScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(230.dp)
-                        .clip(RoundedCornerShape(18.dp))
-                        .background(CyberTealDark)
-                        .border(1.dp, AquaFoamBase.copy(alpha = 0.5f), RoundedCornerShape(18.dp))
+                        .height(220.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(AppSurfaceSubtle)
+                        .border(1.dp, AppBorderLight, RoundedCornerShape(16.dp))
                 ) {
                     val mediaUri = selectedMediaUri
                     val upload = uploadedMedia
@@ -299,7 +276,7 @@ fun CreatePostScreen(
                                     contentAlignment = Alignment.Center
                                 ) {
                                     CircularProgressIndicator(
-                                        color = AquaFoamBase,
+                                        color = BrandTealBase,
                                         strokeWidth = 2.dp,
                                         modifier = Modifier.size(28.dp)
                                     )
@@ -314,15 +291,14 @@ fun CreatePostScreen(
                             .align(Alignment.TopStart)
                             .padding(12.dp)
                             .clip(RoundedCornerShape(8.dp))
-                            .background(CyberTealDarkest.copy(alpha = 0.85f))
-                            .border(1.dp, AquaFoamBase.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                            .background(BrandTealBase.copy(alpha = 0.85f))
                             .padding(horizontal = 8.dp, vertical = 4.dp)
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 imageVector = if (isVideo) FoundITIcons.Video else FoundITIcons.MediaImage,
                                 contentDescription = null,
-                                tint = AquaFoamBase,
+                                tint = BrandMintBase,
                                 modifier = Modifier.size(13.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
@@ -330,7 +306,7 @@ fun CreatePostScreen(
                                 text = if (isVideo) "VIDEO SELECTED" else "IMAGE SELECTED",
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = AquaFoamLighter
+                                color = ColorPureWhite
                             )
                         }
                     }
@@ -343,16 +319,16 @@ fun CreatePostScreen(
                                 .padding(12.dp)
                                 .size(34.dp)
                                 .clip(CircleShape)
-                                .background(CyberTealDarkest.copy(alpha = 0.85f))
-                                .border(1.dp, CyberTealElevated, CircleShape)
+                                .background(ColorPureWhite)
+                                .border(1.dp, AppBorderLight, CircleShape)
                                 .clickable { postViewModel.clearMedia() },
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = FoundITIcons.Close,
                                 contentDescription = "Remove Media",
-                                tint = AquaFoamBase,
-                                modifier = Modifier.size(18.dp)
+                                tint = TextPrimaryDark,
+                                modifier = Modifier.size(16.dp)
                             )
                         }
                     }
@@ -363,13 +339,9 @@ fun CreatePostScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(160.dp)
-                        .clip(RoundedCornerShape(18.dp))
-                        .background(CyberTealDark)
-                        .border(
-                            1.dp,
-                            Brush.linearGradient(listOf(CyberTealElevated, AquaFoamBase.copy(alpha = 0.4f))),
-                            RoundedCornerShape(18.dp)
-                        )
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(ColorPureWhite)
+                        .border(1.dp, AppBorderLight, RoundedCornerShape(16.dp))
                         .clickable(enabled = !isSubmitting) {
                             mediaPickerLauncher.launch(
                                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)
@@ -380,16 +352,16 @@ fun CreatePostScreen(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Box(
                             modifier = Modifier
-                                .size(50.dp)
+                                .size(48.dp)
                                 .clip(CircleShape)
-                                .background(CyberTealMuted)
-                                .border(1.dp, AquaFoamBase.copy(alpha = 0.6f), CircleShape),
+                                .background(BrandMintBg)
+                                .border(1.dp, BrandMintBase, CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = FoundITIcons.CloudUpload,
                                 contentDescription = "Upload Media",
-                                tint = AquaFoamBase,
+                                tint = BrandTealBase,
                                 modifier = Modifier.size(24.dp)
                             )
                         }
@@ -398,13 +370,13 @@ fun CreatePostScreen(
                             text = "Tap to Select Photo or Video",
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
-                            color = AquaFoamLighter
+                            color = TextPrimaryDark
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = "JPG, PNG, MP4, MOV supported • Photo Picker",
                             fontSize = 11.sp,
-                            color = CyberTealSoft
+                            color = TextSecondarySlate
                         )
                     }
                 }
@@ -418,7 +390,7 @@ fun CreatePostScreen(
                 text = "CATEGORY",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
-                color = CyberTealSoft,
+                color = TextSecondarySlate,
                 letterSpacing = 1.2.sp,
                 modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
             )
@@ -435,10 +407,10 @@ fun CreatePostScreen(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(16.dp))
-                            .background(if (isSelected) CyberTealBase else CyberTealDark)
+                            .background(if (isSelected) BrandTealBase else ColorPureWhite)
                             .border(
                                 1.dp,
-                                if (isSelected) AquaFoamBase else CyberTealElevated,
+                                if (isSelected) BrandTealBase else AppBorderLight,
                                 RoundedCornerShape(16.dp)
                             )
                             .clickable(enabled = !isSubmitting) { postViewModel.setCategory(cat) }
@@ -448,7 +420,7 @@ fun CreatePostScreen(
                             text = cat,
                             fontSize = 12.sp,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                            color = if (isSelected) AquaFoamLighter else AquaFoamLight
+                            color = if (isSelected) ColorPureWhite else TextSecondarySlate
                         )
                     }
                 }
@@ -462,7 +434,7 @@ fun CreatePostScreen(
                 text = "ITEM TITLE *",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
-                color = CyberTealSoft,
+                color = TextSecondarySlate,
                 letterSpacing = 1.2.sp,
                 modifier = Modifier.padding(start = 4.dp, bottom = 6.dp)
             )
@@ -470,20 +442,20 @@ fun CreatePostScreen(
             OutlinedTextField(
                 value = title,
                 onValueChange = { postViewModel.setTitle(it) },
-                placeholder = { Text("e.g., Black Sony Headphones, Blue Wallet", color = AquaFoamDark) },
+                placeholder = { Text("e.g., Black Sony Headphones, Blue Wallet", color = TextMutedSlate) },
                 enabled = !isSubmitting,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(CyberTealDark),
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(ColorPureWhite),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = AquaFoamBase,
-                    unfocusedBorderColor = CyberTealElevated,
-                    focusedTextColor = AquaFoamLighter,
-                    unfocusedTextColor = AquaFoamLight,
-                    cursorColor = AquaFoamBase
+                    focusedBorderColor = BrandTealBase,
+                    unfocusedBorderColor = AppBorderLight,
+                    focusedTextColor = TextPrimaryDark,
+                    unfocusedTextColor = TextPrimaryDark,
+                    cursorColor = BrandTealBase
                 ),
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(14.dp),
                 singleLine = true
             )
         }
@@ -495,7 +467,7 @@ fun CreatePostScreen(
                 text = "LOCATION *",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
-                color = CyberTealSoft,
+                color = TextSecondarySlate,
                 letterSpacing = 1.2.sp,
                 modifier = Modifier.padding(start = 4.dp, bottom = 6.dp)
             )
@@ -503,27 +475,27 @@ fun CreatePostScreen(
             OutlinedTextField(
                 value = location,
                 onValueChange = { postViewModel.setLocation(it) },
-                placeholder = { Text("e.g., Central Station Platform 3, Metro Train", color = AquaFoamDark) },
+                placeholder = { Text("e.g., Central Station Platform 3, Metro Train", color = TextMutedSlate) },
                 leadingIcon = {
                     Icon(
                         imageVector = FoundITIcons.Location,
                         contentDescription = null,
-                        tint = AquaFoamBase
+                        tint = BrandTealBase
                     )
                 },
                 enabled = !isSubmitting,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(CyberTealDark),
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(ColorPureWhite),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = AquaFoamBase,
-                    unfocusedBorderColor = CyberTealElevated,
-                    focusedTextColor = AquaFoamLighter,
-                    unfocusedTextColor = AquaFoamLight,
-                    cursorColor = AquaFoamBase
+                    focusedBorderColor = BrandTealBase,
+                    unfocusedBorderColor = AppBorderLight,
+                    focusedTextColor = TextPrimaryDark,
+                    unfocusedTextColor = TextPrimaryDark,
+                    cursorColor = BrandTealBase
                 ),
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(14.dp),
                 singleLine = true
             )
         }
@@ -535,7 +507,7 @@ fun CreatePostScreen(
                 text = "ADDITIONAL DETAILS",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
-                color = CyberTealSoft,
+                color = TextSecondarySlate,
                 letterSpacing = 1.2.sp,
                 modifier = Modifier.padding(start = 4.dp, bottom = 6.dp)
             )
@@ -543,20 +515,20 @@ fun CreatePostScreen(
             OutlinedTextField(
                 value = description,
                 onValueChange = { postViewModel.setDescription(it) },
-                placeholder = { Text("Include unique marks, exact date, or contact instructions...", color = AquaFoamDark) },
+                placeholder = { Text("Include unique marks, exact date, or contact instructions...", color = TextMutedSlate) },
                 enabled = !isSubmitting,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(CyberTealDark),
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(ColorPureWhite),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = AquaFoamBase,
-                    unfocusedBorderColor = CyberTealElevated,
-                    focusedTextColor = AquaFoamLighter,
-                    unfocusedTextColor = AquaFoamLight,
-                    cursorColor = AquaFoamBase
+                    focusedBorderColor = BrandTealBase,
+                    unfocusedBorderColor = AppBorderLight,
+                    focusedTextColor = TextPrimaryDark,
+                    unfocusedTextColor = TextPrimaryDark,
+                    cursorColor = BrandTealBase
                 ),
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(14.dp),
                 minLines = 3,
                 maxLines = 5
             )
@@ -569,9 +541,9 @@ fun CreatePostScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 18.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(CyberTealDark)
-                        .border(1.dp, AquaFoamBase.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(ColorPureWhite)
+                        .border(1.dp, AppBorderLight, RoundedCornerShape(14.dp))
                         .padding(16.dp)
                 ) {
                     val progressPercent = (uploadProgress * 100).toInt()
@@ -588,13 +560,13 @@ fun CreatePostScreen(
                             },
                             fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = AquaFoamLighter
+                            color = TextPrimaryDark
                         )
                         Text(
                             text = if (submissionState is SubmissionState.SavingToFirestore) "Syncing" else "$progressPercent%",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
-                            color = AquaFoamBase
+                            color = BrandTealBase
                         )
                     }
 
@@ -606,8 +578,8 @@ fun CreatePostScreen(
                                 .fillMaxWidth()
                                 .height(6.dp)
                                 .clip(RoundedCornerShape(3.dp)),
-                            color = AquaFoamBase,
-                            trackColor = CyberTealElevated
+                            color = BrandTealBase,
+                            trackColor = AppSurfaceSubtle
                         )
                     } else {
                         LinearProgressIndicator(
@@ -616,8 +588,8 @@ fun CreatePostScreen(
                                 .fillMaxWidth()
                                 .height(6.dp)
                                 .clip(RoundedCornerShape(3.dp)),
-                            color = AquaFoamBase,
-                            trackColor = CyberTealElevated
+                            color = BrandTealBase,
+                            trackColor = AppSurfaceSubtle
                         )
                     }
                 }
@@ -632,9 +604,9 @@ fun CreatePostScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(CyberTealDark)
-                        .border(1.dp, AquaFoamBase, RoundedCornerShape(16.dp))
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(ColorPureWhite)
+                        .border(1.dp, Color(0xFFDC2626), RoundedCornerShape(14.dp))
                         .padding(14.dp)
                 ) {
                     Column {
@@ -647,13 +619,13 @@ fun CreatePostScreen(
                                 text = "SUBMISSION ERROR",
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = AquaFoamBase,
+                                color = Color(0xFFDC2626),
                                 letterSpacing = 1.sp
                             )
                             Icon(
                                 imageVector = FoundITIcons.Close,
                                 contentDescription = "Dismiss",
-                                tint = AquaFoamLight,
+                                tint = TextSecondarySlate,
                                 modifier = Modifier
                                     .size(18.dp)
                                     .clickable { postViewModel.resetSubmissionState() }
@@ -664,7 +636,7 @@ fun CreatePostScreen(
                         Text(
                             text = errorState.message,
                             fontSize = 12.sp,
-                            color = AquaFoamLight,
+                            color = TextSecondarySlate,
                             lineHeight = 16.sp
                         )
 
@@ -675,8 +647,8 @@ fun CreatePostScreen(
                                 onClick = { postViewModel.submitPost(context, currentUser) },
                                 shape = RoundedCornerShape(10.dp),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = CyberTealBase,
-                                    contentColor = AquaFoamLighter
+                                    containerColor = BrandTealBase,
+                                    contentColor = ColorPureWhite
                                 ),
                                 contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
                             ) {
@@ -684,7 +656,7 @@ fun CreatePostScreen(
                                     imageVector = FoundITIcons.Refresh,
                                     contentDescription = null,
                                     modifier = Modifier.size(14.dp),
-                                    tint = AquaFoamLighter
+                                    tint = ColorPureWhite
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
@@ -708,19 +680,19 @@ fun CreatePostScreen(
                 enabled = !isSubmitting,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(52.dp),
-                shape = RoundedCornerShape(16.dp),
+                    .height(50.dp),
+                shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = CyberTealBase,
-                    contentColor = AquaFoamLighter,
-                    disabledContainerColor = CyberTealMuted,
-                    disabledContentColor = AquaFoamDark
+                    containerColor = BrandTealBase,
+                    contentColor = ColorPureWhite,
+                    disabledContainerColor = AppSurfaceSubtle,
+                    disabledContentColor = TextMutedSlate
                 )
             ) {
                 if (isSubmitting) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(20.dp),
-                        color = AquaFoamLighter,
+                        color = ColorPureWhite,
                         strokeWidth = 2.dp
                     )
                     Spacer(modifier = Modifier.width(10.dp))
@@ -733,8 +705,8 @@ fun CreatePostScreen(
                     Icon(
                         imageVector = FoundITIcons.Add,
                         contentDescription = null,
-                        tint = AquaFoamLighter,
-                        modifier = Modifier.size(20.dp)
+                        tint = BrandMintBase,
+                        modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(

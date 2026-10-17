@@ -1,7 +1,10 @@
 package com.shashidhara.foundit.ui.screens
 
+import android.widget.Toast
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,11 +22,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,38 +36,30 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.shashidhara.foundit.ui.components.FoundITIcons
-import com.shashidhara.foundit.ui.theme.AquaFoamBase
-import com.shashidhara.foundit.ui.theme.AquaFoamDark
-import com.shashidhara.foundit.ui.theme.AquaFoamLight
-import com.shashidhara.foundit.ui.theme.AquaFoamLighter
-import com.shashidhara.foundit.ui.theme.AquaFoamMedium
-import com.shashidhara.foundit.ui.theme.CyberTealBase
-import com.shashidhara.foundit.ui.theme.CyberTealDark
-import com.shashidhara.foundit.ui.theme.CyberTealDarker
-import com.shashidhara.foundit.ui.theme.CyberTealDarkest
-import com.shashidhara.foundit.ui.theme.CyberTealElevated
-import com.shashidhara.foundit.ui.theme.CyberTealLight
-import com.shashidhara.foundit.ui.theme.CyberTealMuted
-import com.shashidhara.foundit.ui.theme.CyberTealSoft
-
-import android.widget.Toast
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import com.shashidhara.foundit.R
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.SubcomposeAsyncImage
+import com.shashidhara.foundit.R
 import com.shashidhara.foundit.data.repository.AuthState
+import com.shashidhara.foundit.ui.components.FoundITIcons
+import com.shashidhara.foundit.ui.theme.AppBackgroundWhite
+import com.shashidhara.foundit.ui.theme.AppBorderLight
+import com.shashidhara.foundit.ui.theme.AppSurfaceSubtle
+import com.shashidhara.foundit.ui.theme.AppSurfaceWhite
+import com.shashidhara.foundit.ui.theme.BrandMintBase
+import com.shashidhara.foundit.ui.theme.BrandMintBg
+import com.shashidhara.foundit.ui.theme.BrandTealBase
+import com.shashidhara.foundit.ui.theme.ColorPureWhite
+import com.shashidhara.foundit.ui.theme.TextMutedSlate
+import com.shashidhara.foundit.ui.theme.TextPrimaryDark
+import com.shashidhara.foundit.ui.theme.TextSecondarySlate
 import com.shashidhara.foundit.ui.viewmodel.AuthViewModel
 
 @Composable
@@ -84,33 +81,17 @@ fun AccountScreen(
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .background(CyberTealDarkest),
+            .background(AppBackgroundWhite),
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp)
     ) {
-        // Profile Header Card
+        // Profile Header Card (Clean White with Balanced Accents)
         item {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                CyberTealDark,
-                                CyberTealDarker
-                            )
-                        )
-                    )
-                    .border(
-                        1.5.dp,
-                        Brush.linearGradient(
-                            colors = listOf(
-                                CyberTealLight,
-                                AquaFoamBase.copy(alpha = 0.5f)
-                            )
-                        ),
-                        RoundedCornerShape(24.dp)
-                    )
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(ColorPureWhite)
+                    .border(1.dp, AppBorderLight, RoundedCornerShape(20.dp))
                     .padding(20.dp)
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -125,14 +106,10 @@ fun AccountScreen(
                     // Avatar Box
                     Box(
                         modifier = Modifier
-                            .size(80.dp)
+                            .size(76.dp)
                             .clip(CircleShape)
-                            .background(
-                                Brush.linearGradient(
-                                    colors = listOf(CyberTealLight, CyberTealBase)
-                                )
-                            )
-                            .border(2.5.dp, AquaFoamBase, CircleShape),
+                            .background(AppSurfaceSubtle)
+                            .border(2.dp, BrandTealBase, CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         if (currentProfile?.photoUrl?.isNotBlank() == true) {
@@ -146,16 +123,16 @@ fun AccountScreen(
                                 loading = {
                                     CircularProgressIndicator(
                                         modifier = Modifier.size(24.dp),
-                                        color = AquaFoamBase,
+                                        color = BrandTealBase,
                                         strokeWidth = 2.dp
                                     )
                                 },
                                 error = {
                                     Text(
                                         text = initials,
-                                        fontSize = 28.sp,
-                                        fontWeight = FontWeight.Black,
-                                        color = AquaFoamLighter
+                                        fontSize = 24.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = BrandTealBase
                                     )
                                 }
                             )
@@ -164,34 +141,34 @@ fun AccountScreen(
                                 painter = painterResource(id = R.drawable.foundit_logo),
                                 contentDescription = "FoundIT Logo",
                                 contentScale = ContentScale.Fit,
-                                modifier = Modifier.size(52.dp)
+                                modifier = Modifier.size(48.dp)
                             )
                         } else {
                             Text(
                                 text = initials,
-                                fontSize = 28.sp,
-                                fontWeight = FontWeight.Black,
-                                color = AquaFoamLighter
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = BrandTealBase
                             )
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(14.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             text = currentProfile?.name?.ifBlank { "FoundIT Member" } ?: "Guest Explorer",
-                            fontSize = 20.sp,
+                            fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
-                            color = AquaFoamLighter
+                            color = TextPrimaryDark
                         )
                         if (currentProfile != null) {
                             Spacer(modifier = Modifier.width(6.dp))
                             Icon(
                                 imageVector = FoundITIcons.Check,
                                 contentDescription = "Verified Member",
-                                tint = AquaFoamBase,
-                                modifier = Modifier.size(18.dp)
+                                tint = BrandTealBase,
+                                modifier = Modifier.size(16.dp)
                             )
                         }
                     }
@@ -201,7 +178,7 @@ fun AccountScreen(
                     Text(
                         text = currentProfile?.email?.ifBlank { "Sign in with Google to sync profile" } ?: "Sign in with Google to sync profile",
                         fontSize = 13.sp,
-                        color = AquaFoamMedium
+                        color = TextSecondarySlate
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -209,15 +186,15 @@ fun AccountScreen(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(12.dp))
-                            .background(CyberTealMuted)
-                            .border(1.dp, AquaFoamBase.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
+                            .background(BrandMintBg)
+                            .border(1.dp, BrandMintBase.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
                             .padding(horizontal = 10.dp, vertical = 4.dp)
                     ) {
                         Text(
                             text = if (currentProfile != null) "ROLE: ${currentProfile.role.uppercase()}" else "AUTHENTICATION REQUIRED",
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
-                            color = AquaFoamBase,
+                            color = BrandTealBase,
                             letterSpacing = 1.sp
                         )
                     }
@@ -256,7 +233,7 @@ fun AccountScreen(
                 text = "PERSONAL INFORMATION",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
-                color = CyberTealSoft,
+                color = TextSecondarySlate,
                 letterSpacing = 1.2.sp,
                 modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
             )
@@ -288,7 +265,7 @@ fun AccountScreen(
                 text = "PREFERENCES & SECURITY",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
-                color = CyberTealSoft,
+                color = TextSecondarySlate,
                 letterSpacing = 1.2.sp,
                 modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
             )
@@ -325,9 +302,9 @@ fun AccountScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(CyberTealDark)
-                        .border(1.dp, AquaFoamBase, RoundedCornerShape(16.dp))
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(ColorPureWhite)
+                        .border(1.dp, Color(0xFFDC2626), RoundedCornerShape(14.dp))
                         .padding(14.dp)
                 ) {
                     Row(
@@ -340,14 +317,14 @@ fun AccountScreen(
                                 text = "AUTHENTICATION ERROR",
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = AquaFoamBase,
+                                color = Color(0xFFDC2626),
                                 letterSpacing = 1.sp
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = errorMessage ?: "",
                                 fontSize = 12.sp,
-                                color = AquaFoamLight,
+                                color = TextSecondarySlate,
                                 lineHeight = 16.sp
                             )
                         }
@@ -356,14 +333,14 @@ fun AccountScreen(
                             modifier = Modifier
                                 .size(32.dp)
                                 .clip(CircleShape)
-                                .background(CyberTealMuted)
+                                .background(AppSurfaceSubtle)
                                 .clickable { authViewModel.clearError() },
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = FoundITIcons.Close,
                                 contentDescription = "Dismiss",
-                                tint = AquaFoamBase,
+                                tint = TextSecondarySlate,
                                 modifier = Modifier.size(16.dp)
                             )
                         }
@@ -382,17 +359,17 @@ fun AccountScreen(
                     enabled = !isSigningIn,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(52.dp),
-                    shape = RoundedCornerShape(16.dp),
+                        .height(50.dp),
+                    shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = CyberTealBase,
-                        contentColor = AquaFoamLighter
+                        containerColor = BrandTealBase,
+                        contentColor = ColorPureWhite
                     )
                 ) {
                     if (isSigningIn) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(20.dp),
-                            color = AquaFoamLighter,
+                            color = ColorPureWhite,
                             strokeWidth = 2.dp
                         )
                         Spacer(modifier = Modifier.width(10.dp))
@@ -405,7 +382,7 @@ fun AccountScreen(
                         Icon(
                             imageVector = FoundITIcons.Google,
                             contentDescription = "Google Sign In",
-                            tint = AquaFoamLighter,
+                            tint = ColorPureWhite,
                             modifier = Modifier.size(20.dp)
                         )
                         Spacer(modifier = Modifier.width(10.dp))
@@ -421,17 +398,17 @@ fun AccountScreen(
                     onClick = { },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(50.dp),
-                    shape = RoundedCornerShape(16.dp),
+                        .height(48.dp),
+                    shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = CyberTealBase,
-                        contentColor = AquaFoamLighter
+                        containerColor = BrandTealBase,
+                        contentColor = ColorPureWhite
                     )
                 ) {
                     Icon(
                         imageVector = FoundITIcons.Edit,
                         contentDescription = null,
-                        tint = AquaFoamLighter,
+                        tint = ColorPureWhite,
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
@@ -448,18 +425,18 @@ fun AccountScreen(
                     onClick = { authViewModel.signOut(context) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(50.dp)
-                        .border(1.dp, CyberTealElevated, RoundedCornerShape(16.dp)),
-                    shape = RoundedCornerShape(16.dp),
+                        .height(48.dp)
+                        .border(1.dp, AppBorderLight, RoundedCornerShape(14.dp)),
+                    shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = CyberTealDark,
-                        contentColor = AquaFoamBase
+                        containerColor = AppSurfaceSubtle,
+                        contentColor = BrandTealBase
                     )
                 ) {
                     Icon(
                         imageVector = FoundITIcons.SignOut,
                         contentDescription = null,
-                        tint = AquaFoamBase,
+                        tint = BrandTealBase,
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
@@ -484,9 +461,9 @@ private fun ProfileMetric(
 ) {
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(14.dp))
-            .background(CyberTealDark)
-            .border(1.dp, CyberTealElevated, RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(12.dp))
+            .background(AppSurfaceSubtle)
+            .border(1.dp, AppBorderLight, RoundedCornerShape(12.dp))
             .padding(vertical = 10.dp, horizontal = 6.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -495,14 +472,14 @@ private fun ProfileMetric(
                 text = value,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Black,
-                color = AquaFoamBase
+                color = BrandTealBase
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = title,
                 fontSize = 9.sp,
                 fontWeight = FontWeight.Medium,
-                color = AquaFoamMedium,
+                color = TextSecondarySlate,
                 lineHeight = 11.sp
             )
         }
@@ -516,9 +493,9 @@ private fun AccountCardGroup(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
-            .background(CyberTealDarker)
-            .border(1.dp, CyberTealElevated, RoundedCornerShape(18.dp))
+            .clip(RoundedCornerShape(16.dp))
+            .background(ColorPureWhite)
+            .border(1.dp, AppBorderLight, RoundedCornerShape(16.dp))
             .padding(horizontal = 16.dp, vertical = 6.dp)
     ) {
         Column {
@@ -545,14 +522,14 @@ private fun AccountInfoRow(
                 modifier = Modifier
                     .size(36.dp)
                     .clip(RoundedCornerShape(10.dp))
-                    .background(CyberTealDark)
-                    .border(1.dp, CyberTealElevated, RoundedCornerShape(10.dp)),
+                    .background(AppSurfaceSubtle)
+                    .border(1.dp, AppBorderLight, RoundedCornerShape(10.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = label,
-                    tint = AquaFoamBase,
+                    tint = BrandTealBase,
                     modifier = Modifier.size(18.dp)
                 )
             }
@@ -563,20 +540,20 @@ private fun AccountInfoRow(
                 Text(
                     text = label,
                     fontSize = 11.sp,
-                    color = CyberTealSoft
+                    color = TextSecondarySlate
                 )
                 Text(
                     text = value,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = AquaFoamLighter
+                    color = TextPrimaryDark
                 )
             }
 
             Icon(
                 imageVector = FoundITIcons.ChevronRight,
                 contentDescription = null,
-                tint = CyberTealElevated,
+                tint = TextMutedSlate,
                 modifier = Modifier.size(18.dp)
             )
         }
@@ -586,7 +563,7 @@ private fun AccountInfoRow(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(1.dp)
-                    .background(CyberTealDark)
+                    .background(AppBorderLight)
             )
         }
     }
@@ -612,14 +589,14 @@ private fun AccountToggleRow(
                 modifier = Modifier
                     .size(36.dp)
                     .clip(RoundedCornerShape(10.dp))
-                    .background(CyberTealDark)
-                    .border(1.dp, CyberTealElevated, RoundedCornerShape(10.dp)),
+                    .background(AppSurfaceSubtle)
+                    .border(1.dp, AppBorderLight, RoundedCornerShape(10.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = title,
-                    tint = AquaFoamBase,
+                    tint = BrandTealBase,
                     modifier = Modifier.size(18.dp)
                 )
             }
@@ -631,12 +608,12 @@ private fun AccountToggleRow(
                     text = title,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = AquaFoamLighter
+                    color = TextPrimaryDark
                 )
                 Text(
                     text = description,
                     fontSize = 11.sp,
-                    color = AquaFoamDark,
+                    color = TextSecondarySlate,
                     lineHeight = 15.sp
                 )
             }
@@ -647,12 +624,12 @@ private fun AccountToggleRow(
                 checked = checked,
                 onCheckedChange = onCheckedChange,
                 colors = SwitchDefaults.colors(
-                    checkedThumbColor = AquaFoamLighter,
-                    checkedTrackColor = CyberTealBase,
-                    uncheckedThumbColor = CyberTealSoft,
-                    uncheckedTrackColor = CyberTealDark,
-                    checkedBorderColor = AquaFoamBase,
-                    uncheckedBorderColor = CyberTealElevated
+                    checkedThumbColor = ColorPureWhite,
+                    checkedTrackColor = BrandTealBase,
+                    uncheckedThumbColor = TextMutedSlate,
+                    uncheckedTrackColor = AppSurfaceSubtle,
+                    checkedBorderColor = BrandTealBase,
+                    uncheckedBorderColor = AppBorderLight
                 )
             )
         }
@@ -662,7 +639,7 @@ private fun AccountToggleRow(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(1.dp)
-                    .background(CyberTealDark)
+                    .background(AppBorderLight)
             )
         }
     }

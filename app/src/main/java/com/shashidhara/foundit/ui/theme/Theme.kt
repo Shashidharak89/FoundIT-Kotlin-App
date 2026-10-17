@@ -6,57 +6,33 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 
-private val FoundITDarkColorScheme = darkColorScheme(
-    primary = MintBase,
-    onPrimary = DeepTealDark,
-    primaryContainer = DeepTealDark,
-    onPrimaryContainer = MintLighter,
-
-    secondary = MintMedium,
-    onSecondary = DeepTealDarkest,
-    secondaryContainer = DeepTealDarker,
-    onSecondaryContainer = MintLight,
-
-    tertiary = MintDark,
-    onTertiary = DeepTealDarkest,
-
-    background = DeepTealDarkest,
-    onBackground = MintLight,
-
-    surface = DeepTealDarker,
-    onSurface = MintLighter,
-    surfaceVariant = DeepTealDark,
-    onSurfaceVariant = MintLight,
-
-    outline = DeepTealElevated,
-    outlineVariant = DeepTealMedium
-)
-
 private val FoundITLightColorScheme = lightColorScheme(
-    primary = DeepTealDark,
-    onPrimary = MintLighter,
-    primaryContainer = DeepTealDarker,
-    onPrimaryContainer = MintLight,
+    primary = BrandTealBase,
+    onPrimary = ColorPureWhite,
+    primaryContainer = BrandMintBg,
+    onPrimaryContainer = BrandTealBase,
 
-    secondary = MintDarker,
-    onSecondary = ColorPureWhite,
-    secondaryContainer = MintLight,
-    onSecondaryContainer = DeepTealDarkest,
+    secondary = BrandMintBase,
+    onSecondary = BrandTealBase,
+    secondaryContainer = AppSurfaceSubtle,
+    onSecondaryContainer = TextPrimaryDark,
 
-    tertiary = DeepTealMedium,
+    tertiary = BrandTealLight,
     onTertiary = ColorPureWhite,
 
-    background = DeepTealDarkest,
-    onBackground = MintLight,
+    background = AppBackgroundWhite,
+    onBackground = TextPrimaryDark,
 
-    surface = DeepTealDarker,
-    onSurface = MintLighter,
-    surfaceVariant = DeepTealDark,
-    onSurfaceVariant = MintLight,
+    surface = AppSurfaceWhite,
+    onSurface = TextPrimaryDark,
+    surfaceVariant = AppSurfaceSubtle,
+    onSurfaceVariant = TextSecondarySlate,
 
-    outline = DeepTealElevated,
-    outlineVariant = DeepTealMedium
+    outline = AppBorderLight,
+    outlineVariant = AppBorderSubtle
 )
+
+private val FoundITDarkColorScheme = FoundITLightColorScheme
 
 @Composable
 fun FoundITTheme(

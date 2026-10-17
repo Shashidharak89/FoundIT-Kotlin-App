@@ -44,7 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -58,27 +58,18 @@ import com.shashidhara.foundit.R
 import com.shashidhara.foundit.data.model.PostItem
 import com.shashidhara.foundit.ui.components.FoundITIcons
 import com.shashidhara.foundit.ui.components.FoundITVideoPlayer
-import com.shashidhara.foundit.ui.theme.AquaFoamBase
-import com.shashidhara.foundit.ui.theme.AquaFoamDark
-import com.shashidhara.foundit.ui.theme.AquaFoamLight
-import com.shashidhara.foundit.ui.theme.AquaFoamLighter
-import com.shashidhara.foundit.ui.theme.AquaFoamMedium
-import com.shashidhara.foundit.ui.theme.AquaFoamMuted
-import com.shashidhara.foundit.ui.theme.CyberTealBase
-import com.shashidhara.foundit.ui.theme.CyberTealDark
-import com.shashidhara.foundit.ui.theme.CyberTealDarker
-import com.shashidhara.foundit.ui.theme.CyberTealDarkest
-import com.shashidhara.foundit.ui.theme.CyberTealElevated
-import com.shashidhara.foundit.ui.theme.CyberTealLight
-import com.shashidhara.foundit.ui.theme.CyberTealMedium
-import com.shashidhara.foundit.ui.theme.CyberTealMuted
-import com.shashidhara.foundit.ui.theme.CyberTealSoft
-import com.shashidhara.foundit.ui.theme.DeepTealDark
-import com.shashidhara.foundit.ui.theme.DeepTealDarker
-import com.shashidhara.foundit.ui.theme.DeepTealDarkest
-import com.shashidhara.foundit.ui.theme.DeepTealElevated
-import com.shashidhara.foundit.ui.theme.MintBase
-import com.shashidhara.foundit.ui.theme.MintLighter
+import com.shashidhara.foundit.ui.theme.AppBackgroundWhite
+import com.shashidhara.foundit.ui.theme.AppBorderLight
+import com.shashidhara.foundit.ui.theme.AppSurfaceSubtle
+import com.shashidhara.foundit.ui.theme.AppSurfaceWhite
+import com.shashidhara.foundit.ui.theme.BrandMintBase
+import com.shashidhara.foundit.ui.theme.BrandMintBg
+import com.shashidhara.foundit.ui.theme.BrandTealBase
+import com.shashidhara.foundit.ui.theme.BrandTealDark
+import com.shashidhara.foundit.ui.theme.ColorPureWhite
+import com.shashidhara.foundit.ui.theme.TextMutedSlate
+import com.shashidhara.foundit.ui.theme.TextPrimaryDark
+import com.shashidhara.foundit.ui.theme.TextSecondarySlate
 import com.shashidhara.foundit.ui.viewmodel.PostViewModel
 
 @Composable
@@ -114,32 +105,21 @@ fun HomeScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(DeepTealDarkest)
+            .background(AppBackgroundWhite)
     ) {
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(bottom = 88.dp)
         ) {
-            // Hero Landing Section with Brand Logo
+            // Hero Landing Section — The single branded anchor card using #06363A with crisp white typography
             item {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp)
-                        .clip(RoundedCornerShape(24.dp))
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(DeepTealDark, DeepTealDarker)
-                            )
-                        )
-                        .border(
-                            1.5.dp,
-                            Brush.linearGradient(
-                                colors = listOf(DeepTealElevated, MintBase.copy(alpha = 0.5f))
-                            ),
-                            RoundedCornerShape(24.dp)
-                        )
+                        .clip(RoundedCornerShape(22.dp))
+                        .background(BrandTealBase)
                         .padding(20.dp)
                 ) {
                     Column {
@@ -152,8 +132,8 @@ fun HomeScreen(
                             Row(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(20.dp))
-                                    .background(CyberTealMuted)
-                                    .border(1.dp, MintBase.copy(alpha = 0.4f), RoundedCornerShape(20.dp))
+                                    .background(ColorPureWhite.copy(alpha = 0.12f))
+                                    .border(1.dp, BrandMintBase.copy(alpha = 0.35f), RoundedCornerShape(20.dp))
                                     .padding(horizontal = 10.dp, vertical = 4.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
@@ -161,14 +141,14 @@ fun HomeScreen(
                                     modifier = Modifier
                                         .size(6.dp)
                                         .clip(CircleShape)
-                                        .background(MintBase)
+                                        .background(BrandMintBase)
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
                                     text = "COMMUNITY RECOVERY ACTIVE",
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = MintLighter,
+                                    color = ColorPureWhite,
                                     letterSpacing = 1.sp
                                 )
                             }
@@ -179,7 +159,7 @@ fun HomeScreen(
                                 contentDescription = "FoundIT Logo",
                                 contentScale = ContentScale.Fit,
                                 modifier = Modifier
-                                    .size(46.dp)
+                                    .size(44.dp)
                                     .clip(RoundedCornerShape(10.dp))
                             )
                         }
@@ -188,10 +168,10 @@ fun HomeScreen(
 
                         Text(
                             text = "Find What You Lost.\nReturn What You Found.",
-                            fontSize = 24.sp,
+                            fontSize = 22.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            color = MintLighter,
-                            lineHeight = 30.sp
+                            color = ColorPureWhite,
+                            lineHeight = 28.sp
                         )
 
                         Spacer(modifier = Modifier.height(8.dp))
@@ -199,11 +179,11 @@ fun HomeScreen(
                         Text(
                             text = "A secure community lost-and-found network. Real-time items posted directly by people around you.",
                             fontSize = 13.sp,
-                            color = AquaFoamLight,
+                            color = ColorPureWhite.copy(alpha = 0.85f),
                             lineHeight = 18.sp
                         )
 
-                        Spacer(modifier = Modifier.height(20.dp))
+                        Spacer(modifier = Modifier.height(18.dp))
 
                         // Action Buttons: I Lost Something / I Found Something
                         Row(
@@ -214,11 +194,11 @@ fun HomeScreen(
                                 onClick = { onNavigateToCreatePost("LOST") },
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(46.dp),
-                                shape = RoundedCornerShape(14.dp),
+                                    .height(44.dp),
+                                shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = MintBase,
-                                    contentColor = DeepTealDark
+                                    containerColor = BrandMintBase,
+                                    contentColor = BrandTealBase
                                 )
                             ) {
                                 Text(
@@ -232,12 +212,13 @@ fun HomeScreen(
                                 onClick = { onNavigateToCreatePost("FOUND") },
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(46.dp),
-                                shape = RoundedCornerShape(14.dp),
+                                    .height(44.dp),
+                                shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = DeepTealElevated,
-                                    contentColor = MintLighter
-                                )
+                                    containerColor = ColorPureWhite.copy(alpha = 0.15f),
+                                    contentColor = ColorPureWhite
+                                ),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, ColorPureWhite.copy(alpha = 0.35f))
                             ) {
                                 Text(
                                     text = "I Found Something",
@@ -250,7 +231,7 @@ fun HomeScreen(
                 }
             }
 
-            // Search Bar with Clear Button
+            // Search Bar with Clear Button (Clean White Surface)
             item {
                 Box(
                     modifier = Modifier
@@ -263,7 +244,7 @@ fun HomeScreen(
                         placeholder = {
                             Text(
                                 text = "Search lost or found items, locations...",
-                                color = AquaFoamDark,
+                                color = TextMutedSlate,
                                 fontSize = 13.sp
                             )
                         },
@@ -271,7 +252,7 @@ fun HomeScreen(
                             Icon(
                                 imageVector = FoundITIcons.Search,
                                 contentDescription = "Search",
-                                tint = MintBase,
+                                tint = BrandTealBase,
                                 modifier = Modifier.size(20.dp)
                             )
                         },
@@ -280,7 +261,7 @@ fun HomeScreen(
                                 Icon(
                                     imageVector = FoundITIcons.Close,
                                     contentDescription = "Clear Search",
-                                    tint = AquaFoamLight,
+                                    tint = TextSecondarySlate,
                                     modifier = Modifier
                                         .size(18.dp)
                                         .clickable { postViewModel.onSearchQueryChanged("") }
@@ -289,22 +270,22 @@ fun HomeScreen(
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(DeepTealDarker),
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(ColorPureWhite),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MintBase,
-                            unfocusedBorderColor = DeepTealElevated,
-                            focusedTextColor = MintLighter,
-                            unfocusedTextColor = AquaFoamLight,
-                            cursorColor = MintBase
+                            focusedBorderColor = BrandTealBase,
+                            unfocusedBorderColor = AppBorderLight,
+                            focusedTextColor = TextPrimaryDark,
+                            unfocusedTextColor = TextPrimaryDark,
+                            cursorColor = BrandTealBase
                         ),
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(14.dp),
                         singleLine = true
                     )
                 }
             }
 
-            // Horizontal Category Filter Pills
+            // Horizontal Category Filter Pills (Minimalist Black & White + Accent Selection)
             item {
                 Row(
                     modifier = Modifier
@@ -318,10 +299,10 @@ fun HomeScreen(
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(20.dp))
-                                .background(if (isSelected) MintBase else DeepTealDark)
+                                .background(if (isSelected) BrandTealBase else ColorPureWhite)
                                 .border(
                                     1.dp,
-                                    if (isSelected) MintLighter else DeepTealElevated,
+                                    if (isSelected) BrandTealBase else AppBorderLight,
                                     RoundedCornerShape(20.dp)
                                 )
                                 .clickable { postViewModel.onCategorySelected(category) }
@@ -331,7 +312,7 @@ fun HomeScreen(
                                 text = category,
                                 fontSize = 13.sp,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                color = if (isSelected) DeepTealDark else AquaFoamLight
+                                color = if (isSelected) ColorPureWhite else TextSecondarySlate
                             )
                         }
                     }
@@ -343,15 +324,15 @@ fun HomeScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 12.dp),
+                        .padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 10.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
                         text = "COMMUNITY DISCOVERIES",
-                        fontSize = 12.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = AquaFoamDark,
+                        color = TextSecondarySlate,
                         letterSpacing = 1.2.sp
                     )
 
@@ -360,7 +341,7 @@ fun HomeScreen(
                             text = if (feedState.posts.isNotEmpty()) "${feedState.posts.size} Items (Page ${feedState.page})" else "0 Items",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = MintBase
+                            color = BrandTealBase
                         )
 
                         Spacer(modifier = Modifier.width(8.dp))
@@ -368,7 +349,7 @@ fun HomeScreen(
                         Icon(
                             imageVector = FoundITIcons.Refresh,
                             contentDescription = "Refresh Feed",
-                            tint = MintBase,
+                            tint = BrandTealBase,
                             modifier = Modifier
                                 .size(16.dp)
                                 .clickable { postViewModel.refreshFeed() }
@@ -388,14 +369,14 @@ fun HomeScreen(
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             CircularProgressIndicator(
-                                color = MintBase,
+                                color = BrandTealBase,
                                 strokeWidth = 2.5.dp,
                                 modifier = Modifier.size(36.dp)
                             )
                             Spacer(modifier = Modifier.height(14.dp))
                             Text(
                                 text = "Loading community posts...",
-                                color = AquaFoamLight,
+                                color = TextSecondarySlate,
                                 fontSize = 13.sp
                             )
                         }
@@ -426,7 +407,7 @@ fun HomeScreen(
                                 horizontalArrangement = Arrangement.Center
                             ) {
                                 CircularProgressIndicator(
-                                    color = MintBase,
+                                    color = BrandTealBase,
                                     strokeWidth = 2.dp,
                                     modifier = Modifier.size(20.dp)
                                 )
@@ -434,7 +415,7 @@ fun HomeScreen(
                                 Text(
                                     text = "Loading page ${feedState.page + 1}...",
                                     fontSize = 13.sp,
-                                    color = AquaFoamLight
+                                    color = TextSecondarySlate
                                 )
                             }
                         } else if (feedState.hasMore) {
@@ -442,12 +423,12 @@ fun HomeScreen(
                                 onClick = { postViewModel.loadNextPage() },
                                 shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = DeepTealDark,
-                                    contentColor = MintBase
+                                    containerColor = AppSurfaceSubtle,
+                                    contentColor = BrandTealBase
                                 ),
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .border(1.dp, DeepTealElevated, RoundedCornerShape(12.dp))
+                                    .border(1.dp, AppBorderLight, RoundedCornerShape(12.dp))
                             ) {
                                 Text(
                                     text = "Load More Posts (Page ${feedState.page + 1})",
@@ -459,43 +440,43 @@ fun HomeScreen(
                             Text(
                                 text = "All ${feedState.posts.size} community posts loaded",
                                 fontSize = 12.sp,
-                                color = DeepTealElevated,
+                                color = TextMutedSlate,
                                 textAlign = TextAlign.Center
                             )
                         }
                     }
                 }
             } else if (!feedState.isLoading) {
-                // Empty State (Zero Dummy Data)
+                // Empty State (Zero Dummy Data, Clean Minimalist Container)
                 item {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(24.dp)
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(DeepTealDarker)
-                            .border(1.dp, DeepTealElevated, RoundedCornerShape(20.dp))
-                            .padding(28.dp),
+                            .padding(20.dp)
+                            .clip(RoundedCornerShape(18.dp))
+                            .background(ColorPureWhite)
+                            .border(1.dp, AppBorderLight, RoundedCornerShape(18.dp))
+                            .padding(26.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Box(
                                 modifier = Modifier
-                                    .size(60.dp)
+                                    .size(56.dp)
                                     .clip(CircleShape)
-                                    .background(CyberTealMuted)
-                                    .border(1.dp, MintBase, CircleShape),
+                                    .background(BrandMintBg)
+                                    .border(1.dp, BrandMintBase, CircleShape),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     imageVector = if (feedState.searchQuery.isNotBlank()) FoundITIcons.Search else FoundITIcons.Radar,
                                     contentDescription = null,
-                                    tint = MintBase,
-                                    modifier = Modifier.size(28.dp)
+                                    tint = BrandTealBase,
+                                    modifier = Modifier.size(26.dp)
                                 )
                             }
 
-                            Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(14.dp))
 
                             val isAuthRequired = feedState.error?.contains("PERMISSION_DENIED", ignoreCase = true) == true ||
                                     com.google.firebase.auth.FirebaseAuth.getInstance().currentUser == null
@@ -506,11 +487,11 @@ fun HomeScreen(
                                 else "No Community Posts Yet",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = MintLighter,
+                                color = TextPrimaryDark,
                                 textAlign = TextAlign.Center
                             )
 
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(6.dp))
 
                             Text(
                                 text = if (isAuthRequired) {
@@ -521,20 +502,20 @@ fun HomeScreen(
                                     "Be the first to publish a lost or found report to help the community."
                                 },
                                 fontSize = 13.sp,
-                                color = AquaFoamLight,
+                                color = TextSecondarySlate,
                                 textAlign = TextAlign.Center,
                                 lineHeight = 18.sp
                             )
 
-                            Spacer(modifier = Modifier.height(18.dp))
+                            Spacer(modifier = Modifier.height(16.dp))
 
                             if (isAuthRequired) {
                                 Button(
                                     onClick = { onNavigateToAccount() },
                                     shape = RoundedCornerShape(12.dp),
                                     colors = ButtonDefaults.buttonColors(
-                                        containerColor = MintBase,
-                                        contentColor = DeepTealDark
+                                        containerColor = BrandTealBase,
+                                        contentColor = ColorPureWhite
                                     )
                                 ) {
                                     Text(
@@ -548,10 +529,10 @@ fun HomeScreen(
                                     onClick = { postViewModel.onSearchQueryChanged("") },
                                     shape = RoundedCornerShape(12.dp),
                                     colors = ButtonDefaults.buttonColors(
-                                        containerColor = DeepTealDark,
-                                        contentColor = MintBase
+                                        containerColor = AppSurfaceSubtle,
+                                        contentColor = BrandTealBase
                                     ),
-                                    modifier = Modifier.border(1.dp, MintBase.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+                                    modifier = Modifier.border(1.dp, AppBorderLight, RoundedCornerShape(12.dp))
                                 ) {
                                     Text(
                                         text = "Clear Search",
@@ -564,8 +545,8 @@ fun HomeScreen(
                                     onClick = { onNavigateToCreatePost("LOST") },
                                     shape = RoundedCornerShape(12.dp),
                                     colors = ButtonDefaults.buttonColors(
-                                        containerColor = MintBase,
-                                        contentColor = DeepTealDark
+                                        containerColor = BrandTealBase,
+                                        contentColor = ColorPureWhite
                                     )
                                 ) {
                                     Text(
@@ -581,15 +562,14 @@ fun HomeScreen(
             }
         }
 
-        // Floating Action Button to Report Item
+        // Floating Action Button to Report Item (Selective Brand Accent)
         FloatingActionButton(
             onClick = { onNavigateToCreatePost("LOST") },
-            containerColor = MintBase,
-            contentColor = DeepTealDark,
+            containerColor = BrandTealBase,
+            contentColor = ColorPureWhite,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(20.dp)
-                .border(1.5.dp, MintLighter, RoundedCornerShape(16.dp)),
+                .padding(20.dp),
             shape = RoundedCornerShape(16.dp)
         ) {
             Row(
@@ -598,16 +578,16 @@ fun HomeScreen(
             ) {
                 Icon(
                     imageVector = FoundITIcons.Add,
-                    contentDescription = "Report Item",
-                    tint = DeepTealDark,
+                    contentDescription = "Post Item",
+                    tint = BrandMintBase,
                     modifier = Modifier.size(20.dp)
                 )
-                Spacer(modifier = Modifier.width(6.dp))
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Report",
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 14.sp,
-                    color = DeepTealDark
+                    text = "Report Item",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp,
+                    color = ColorPureWhite
                 )
             }
         }
@@ -623,7 +603,7 @@ fun HomeScreen(
 }
 
 /**
- * Live Post Card featuring Cloudinary media thumbnail, video indicator, and metadata.
+ * Live Post Card on Clean White Surface with Dark Crisp Text and Selective Mint/Teal Accents.
  */
 @Composable
 private fun PostItemCard(
@@ -637,9 +617,9 @@ private fun PostItemCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 6.dp)
-            .clip(RoundedCornerShape(18.dp))
-            .background(DeepTealDarker)
-            .border(1.dp, DeepTealElevated, RoundedCornerShape(18.dp))
+            .clip(RoundedCornerShape(16.dp))
+            .background(ColorPureWhite)
+            .border(1.dp, AppBorderLight, RoundedCornerShape(16.dp))
             .clickable { onClick() }
             .padding(14.dp)
     ) {
@@ -651,9 +631,9 @@ private fun PostItemCard(
             Box(
                 modifier = Modifier
                     .size(68.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(DeepTealDark)
-                    .border(1.dp, if (isFound) MintBase else DeepTealElevated, RoundedCornerShape(14.dp)),
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(AppSurfaceSubtle)
+                    .border(1.dp, AppBorderLight, RoundedCornerShape(12.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 if (mediaUrl.isNotBlank()) {
@@ -665,7 +645,7 @@ private fun PostItemCard(
                         loading = {
                             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                 CircularProgressIndicator(
-                                    color = MintBase,
+                                    color = BrandTealBase,
                                     strokeWidth = 2.dp,
                                     modifier = Modifier.size(18.dp)
                                 )
@@ -675,7 +655,7 @@ private fun PostItemCard(
                             Icon(
                                 imageVector = if (post.isVideo) FoundITIcons.Video else FoundITIcons.MediaImage,
                                 contentDescription = null,
-                                tint = AquaFoamMedium,
+                                tint = TextSecondarySlate,
                                 modifier = Modifier.size(24.dp)
                             )
                         }
@@ -685,17 +665,16 @@ private fun PostItemCard(
                     if (post.isVideo) {
                         Box(
                             modifier = Modifier
-                                .size(28.dp)
+                                .size(26.dp)
                                 .clip(CircleShape)
-                                .background(DeepTealDarkest.copy(alpha = 0.8f))
-                                .border(1.dp, MintBase, CircleShape),
+                                .background(BrandTealBase.copy(alpha = 0.85f)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = FoundITIcons.Play,
                                 contentDescription = "Play Video",
-                                tint = MintLighter,
-                                modifier = Modifier.size(14.dp)
+                                tint = BrandMintBase,
+                                modifier = Modifier.size(13.dp)
                             )
                         }
                     }
@@ -703,7 +682,7 @@ private fun PostItemCard(
                     Icon(
                         imageVector = if (post.isVideo) FoundITIcons.Video else FoundITIcons.MediaImage,
                         contentDescription = null,
-                        tint = MintBase,
+                        tint = BrandTealBase,
                         modifier = Modifier.size(24.dp)
                     )
                 }
@@ -721,19 +700,21 @@ private fun PostItemCard(
                         text = post.title,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MintLighter,
+                        color = TextPrimaryDark,
                         modifier = Modifier.weight(1f),
                         maxLines = 1
                     )
 
-                    // Status Badge (FOUND in Mint, LOST in Pine Tag)
+                    Spacer(modifier = Modifier.width(6.dp))
+
+                    // Status Badge (FOUND in soft mint pill, LOST in clean neutral pill)
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
-                            .background(if (isFound) CyberTealMuted else DeepTealDark)
+                            .background(if (isFound) BrandMintBg else AppSurfaceSubtle)
                             .border(
                                 1.dp,
-                                if (isFound) MintBase else DeepTealElevated,
+                                if (isFound) BrandMintBase else AppBorderLight,
                                 RoundedCornerShape(8.dp)
                             )
                             .padding(horizontal = 8.dp, vertical = 3.dp)
@@ -742,7 +723,7 @@ private fun PostItemCard(
                             text = if (isFound) "FOUND" else "LOST",
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
-                            color = if (isFound) MintBase else AquaFoamLight
+                            color = if (isFound) BrandTealBase else TextPrimaryDark
                         )
                     }
                 }
@@ -753,19 +734,19 @@ private fun PostItemCard(
                     Icon(
                         imageVector = FoundITIcons.Location,
                         contentDescription = "Location",
-                        tint = MintBase,
+                        tint = BrandTealBase,
                         modifier = Modifier.size(13.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = post.location,
                         fontSize = 11.sp,
-                        color = AquaFoamLight.copy(alpha = 0.85f),
+                        color = TextSecondarySlate,
                         maxLines = 1
                     )
                 }
 
-                Spacer(modifier = Modifier.height(3.dp))
+                Spacer(modifier = Modifier.height(4.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -775,14 +756,14 @@ private fun PostItemCard(
                     Text(
                         text = post.category,
                         fontSize = 11.sp,
-                        color = AquaFoamDark
+                        color = TextMutedSlate
                     )
 
                     if (post.authorName.isNotBlank()) {
                         Text(
                             text = "by ${post.authorName.split(" ").firstOrNull() ?: post.authorName}",
                             fontSize = 10.sp,
-                            color = AquaFoamLight.copy(alpha = 0.6f)
+                            color = TextMutedSlate
                         )
                     }
                 }
@@ -804,16 +785,12 @@ private fun PostDetailsDialog(
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
-            shape = RoundedCornerShape(24.dp),
-            color = DeepTealDarker,
+            shape = RoundedCornerShape(20.dp),
+            color = ColorPureWhite,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 16.dp)
-                .border(
-                    1.5.dp,
-                    Brush.linearGradient(listOf(DeepTealElevated, MintBase.copy(alpha = 0.6f))),
-                    RoundedCornerShape(24.dp)
-                )
+                .border(1.dp, AppBorderLight, RoundedCornerShape(20.dp))
         ) {
             Column(
                 modifier = Modifier
@@ -829,23 +806,23 @@ private fun PostDetailsDialog(
                     // Status Badge
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(if (isFound) CyberTealMuted else DeepTealDark)
-                            .border(1.dp, MintBase, RoundedCornerShape(10.dp))
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(if (isFound) BrandMintBg else AppSurfaceSubtle)
+                            .border(1.dp, if (isFound) BrandMintBase else AppBorderLight, RoundedCornerShape(8.dp))
                             .padding(horizontal = 10.dp, vertical = 4.dp)
                     ) {
                         Text(
                             text = if (isFound) "FOUND ITEM" else "LOST REPORT",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = if (isFound) MintBase else MintLighter
+                            color = if (isFound) BrandTealBase else TextPrimaryDark
                         )
                     }
 
                     Icon(
                         imageVector = FoundITIcons.Close,
                         contentDescription = "Close",
-                        tint = AquaFoamLight,
+                        tint = TextSecondarySlate,
                         modifier = Modifier
                             .size(22.dp)
                             .clip(CircleShape)
@@ -860,9 +837,9 @@ private fun PostDetailsDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(210.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(DeepTealDarkest)
-                        .border(1.dp, DeepTealElevated, RoundedCornerShape(16.dp)),
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(AppSurfaceSubtle)
+                        .border(1.dp, AppBorderLight, RoundedCornerShape(14.dp)),
                     contentAlignment = Alignment.Center
                 ) {
                     if (mediaUrl.isNotBlank()) {
@@ -882,7 +859,7 @@ private fun PostDetailsDialog(
                                 loading = {
                                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                         CircularProgressIndicator(
-                                            color = MintBase,
+                                            color = BrandTealBase,
                                             strokeWidth = 2.dp,
                                             modifier = Modifier.size(24.dp)
                                         )
@@ -893,14 +870,14 @@ private fun PostDetailsDialog(
                                         Icon(
                                             imageVector = FoundITIcons.MediaImage,
                                             contentDescription = null,
-                                            tint = AquaFoamMedium,
+                                            tint = TextMutedSlate,
                                             modifier = Modifier.size(36.dp)
                                         )
                                         Spacer(modifier = Modifier.height(6.dp))
                                         Text(
                                             text = "Failed to load media",
                                             fontSize = 12.sp,
-                                            color = AquaFoamMedium
+                                            color = TextSecondarySlate
                                         )
                                     }
                                 }
@@ -910,7 +887,7 @@ private fun PostDetailsDialog(
                         Icon(
                             imageVector = FoundITIcons.MediaImage,
                             contentDescription = null,
-                            tint = AquaFoamBase,
+                            tint = BrandTealBase,
                             modifier = Modifier.size(48.dp)
                         )
                     }
@@ -923,7 +900,7 @@ private fun PostDetailsDialog(
                     text = post.title,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = MintLighter
+                    color = TextPrimaryDark
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -933,7 +910,7 @@ private fun PostDetailsDialog(
                     Icon(
                         imageVector = FoundITIcons.Location,
                         contentDescription = "Location",
-                        tint = MintBase,
+                        tint = BrandTealBase,
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
@@ -941,7 +918,7 @@ private fun PostDetailsDialog(
                         text = post.location,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Medium,
-                        color = AquaFoamLight
+                        color = TextSecondarySlate
                     )
                 }
 
@@ -951,7 +928,7 @@ private fun PostDetailsDialog(
                     Text(
                         text = post.description,
                         fontSize = 12.sp,
-                        color = AquaFoamLight.copy(alpha = 0.9f),
+                        color = TextSecondarySlate,
                         lineHeight = 17.sp
                     )
                 }
@@ -967,14 +944,15 @@ private fun PostDetailsDialog(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
-                            .background(DeepTealDark)
-                            .border(1.dp, DeepTealElevated, RoundedCornerShape(8.dp))
+                            .background(AppSurfaceSubtle)
+                            .border(1.dp, AppBorderLight, RoundedCornerShape(8.dp))
                             .padding(horizontal = 8.dp, vertical = 3.dp)
                     ) {
                         Text(
                             text = post.category,
                             fontSize = 11.sp,
-                            color = MintBase
+                            color = BrandTealBase,
+                            fontWeight = FontWeight.SemiBold
                         )
                     }
 
@@ -983,13 +961,13 @@ private fun PostDetailsDialog(
                             modifier = Modifier
                                 .size(6.dp)
                                 .clip(CircleShape)
-                                .background(MintBase)
+                                .background(BrandMintBase)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = "Cloudinary Verified",
                             fontSize = 10.sp,
-                            color = AquaFoamLight
+                            color = TextMutedSlate
                         )
                     }
                 }
@@ -1001,8 +979,8 @@ private fun PostDetailsDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(12.dp))
-                        .background(DeepTealDark)
-                        .border(1.dp, DeepTealElevated, RoundedCornerShape(12.dp))
+                        .background(AppSurfaceSubtle)
+                        .border(1.dp, AppBorderLight, RoundedCornerShape(12.dp))
                         .padding(10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -1010,14 +988,14 @@ private fun PostDetailsDialog(
                         modifier = Modifier
                             .size(32.dp)
                             .clip(CircleShape)
-                            .background(MintBase),
+                            .background(BrandTealBase),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = post.authorName.take(1).uppercase().ifBlank { "U" },
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
-                            color = DeepTealDark
+                            color = ColorPureWhite
                         )
                     }
                     Spacer(modifier = Modifier.width(10.dp))
@@ -1026,12 +1004,12 @@ private fun PostDetailsDialog(
                             text = "Reported by ${post.authorName.ifBlank { "Community Member" }}",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = MintLighter
+                            color = TextPrimaryDark
                         )
                         Text(
                             text = "FoundIT Community Network",
                             fontSize = 10.sp,
-                            color = AquaFoamDark
+                            color = TextMutedSlate
                         )
                     }
                 }

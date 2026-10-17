@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
@@ -30,15 +31,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.shashidhara.foundit.R
 import com.shashidhara.foundit.ui.navigation.Screen
-import com.shashidhara.foundit.ui.theme.AquaFoamBase
-import com.shashidhara.foundit.ui.theme.AquaFoamLighter
-import com.shashidhara.foundit.ui.theme.CyberTealBase
-import com.shashidhara.foundit.ui.theme.CyberTealDark
-import com.shashidhara.foundit.ui.theme.CyberTealDarker
-import com.shashidhara.foundit.ui.theme.CyberTealElevated
-import com.shashidhara.foundit.ui.theme.CyberTealLight
-import com.shashidhara.foundit.ui.theme.CyberTealMuted
-import com.shashidhara.foundit.ui.theme.CyberTealSoft
+import com.shashidhara.foundit.ui.theme.AppBorderLight
+import com.shashidhara.foundit.ui.theme.AppSurfaceSubtle
+import com.shashidhara.foundit.ui.theme.BrandMintBase
+import com.shashidhara.foundit.ui.theme.BrandTealBase
+import com.shashidhara.foundit.ui.theme.ColorPureWhite
+import com.shashidhara.foundit.ui.theme.TextPrimaryDark
+import com.shashidhara.foundit.ui.theme.TextSecondarySlate
 
 /**
  * Global Top Navbar for FoundIT
@@ -53,15 +52,7 @@ fun FoundITTopBar(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        CyberTealDarker,
-                        CyberTealDark
-                    )
-                )
-            )
-
+            .background(ColorPureWhite)
     ) {
         Row(
             modifier = Modifier
@@ -78,15 +69,15 @@ fun FoundITTopBar(
                     modifier = Modifier
                         .size(44.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(CyberTealMuted)
-                        .border(1.dp, CyberTealElevated, RoundedCornerShape(12.dp))
+                        .background(AppSurfaceSubtle)
+                        .border(1.dp, AppBorderLight, RoundedCornerShape(12.dp))
                         .clickable { onMenuClick() },
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = FoundITIcons.Menu,
                         contentDescription = "Open Sidebar Navigation",
-                        tint = AquaFoamBase,
+                        tint = BrandTealBase,
                         modifier = Modifier.size(24.dp)
                     )
                 }
@@ -114,14 +105,14 @@ fun FoundITTopBar(
                                 text = "Found",
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.ExtraBold,
-                                color = AquaFoamLighter,
+                                color = TextPrimaryDark,
                                 letterSpacing = (-0.5).sp
                             )
                             Text(
                                 text = "IT",
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Black,
-                                color = AquaFoamBase,
+                                color = BrandTealBase,
                                 letterSpacing = (-0.5).sp
                             )
                         }
@@ -129,7 +120,7 @@ fun FoundITTopBar(
                             text = currentScreen.title.uppercase(),
                             fontSize = 10.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = CyberTealSoft,
+                            color = TextSecondarySlate,
                             letterSpacing = 1.2.sp
                         )
                     }
@@ -144,44 +135,35 @@ fun FoundITTopBar(
                     modifier = Modifier
                         .size(40.dp)
                         .clip(CircleShape)
-                        .background(CyberTealMuted)
-                        .border(1.dp, CyberTealElevated, CircleShape),
+                        .background(AppSurfaceSubtle)
+                        .border(1.dp, AppBorderLight, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = FoundITIcons.Notifications,
                         contentDescription = "Notifications",
-                        tint = AquaFoamBase,
+                        tint = BrandTealBase,
                         modifier = Modifier.size(20.dp)
                     )
-                    // Notification indicator dot in Aqua Foam
+                    // Notification indicator dot in Mint with Teal border
                     Box(
                         modifier = Modifier
                             .size(8.dp)
                             .align(Alignment.TopEnd)
                             .padding(top = 2.dp, end = 2.dp)
                             .clip(CircleShape)
-                            .background(AquaFoamBase)
+                            .background(BrandMintBase)
                     )
                 }
             }
         }
 
-        // Bottom cyber border line
+        // Bottom clean divider line
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 2.dp)
-                .background(
-                    Brush.horizontalGradient(
-                        colors = listOf(
-                            CyberTealElevated.copy(alpha = 0.2f),
-                            CyberTealLight.copy(alpha = 0.7f),
-                            AquaFoamBase.copy(alpha = 0.5f),
-                            CyberTealElevated.copy(alpha = 0.2f)
-                        )
-                    )
-                )
+                .height(1.dp)
+                .background(AppBorderLight)
         )
     }
 }

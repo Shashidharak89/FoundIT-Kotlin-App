@@ -29,7 +29,8 @@ import com.shashidhara.foundit.ui.navigation.Screen
 import com.shashidhara.foundit.ui.screens.AccountScreen
 import com.shashidhara.foundit.ui.screens.CreatePostScreen
 import com.shashidhara.foundit.ui.screens.HomeScreen
-import com.shashidhara.foundit.ui.theme.CyberTealDarkest
+import com.shashidhara.foundit.ui.theme.ColorPureBlack
+import com.shashidhara.foundit.ui.theme.ColorPureWhite
 import com.shashidhara.foundit.ui.viewmodel.AuthViewModel
 import com.shashidhara.foundit.ui.viewmodel.PostViewModel
 import kotlinx.coroutines.launch
@@ -74,7 +75,7 @@ fun FoundITApp(
         drawerState = drawerState,
         // Closes automatically when user taps anywhere outside the sidebar (scrim tap)
         gesturesEnabled = true,
-        scrimColor = CyberTealDarkest.copy(alpha = 0.75f),
+        scrimColor = ColorPureBlack.copy(alpha = 0.5f),
         drawerContent = {
             FoundITSidebar(
                 currentScreen = currentScreen,
@@ -104,13 +105,13 @@ fun FoundITApp(
                     }
                 )
             },
-            containerColor = CyberTealDarkest
+            containerColor = ColorPureWhite
         ) { innerPadding ->
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
-                    .background(CyberTealDarkest)
+                    .background(ColorPureWhite)
             ) {
                 Crossfade(
                     targetState = currentScreen,
