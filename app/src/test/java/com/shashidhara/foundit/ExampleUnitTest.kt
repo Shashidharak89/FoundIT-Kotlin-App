@@ -1,17 +1,58 @@
 package com.shashidhara.foundit
 
+import androidx.compose.ui.test.junit4.createComposeRule
+import com.shashidhara.foundit.MainActivity
+import com.shashidhara.foundit.ui.FoundITApp
+import com.shashidhara.foundit.ui.screens.AccountScreen
+import com.shashidhara.foundit.ui.screens.HomeScreen
+import com.shashidhara.foundit.ui.theme.FoundITTheme
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Rule
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.Robolectric
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
-import org.junit.Assert.*
-
-/**
- * Example local unit test, which will execute on the development machine (host).
- *
- * See [testing documentation](http://d.android.com/tools/testing).
- */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [31], packageName = "com.shashidhara.foundit")
 class ExampleUnitTest {
+
+    @get:Rule
+    val composeTestRule = createComposeRule()
+
     @Test
-    fun addition_isCorrect() {
-        assertEquals(4, 2 + 2)
+    fun testLaunchMainActivity() {
+        val controller = Robolectric.buildActivity(MainActivity::class.java).setup()
+        val activity = controller.get()
+        assertNotNull(activity)
+    }
+
+    @Test
+    fun testHomeScreenRendersWithoutCrash() {
+        composeTestRule.setContent {
+            FoundITTheme {
+                HomeScreen()
+            }
+        }
+    }
+
+    @Test
+    fun testAccountScreenRendersWithoutCrash() {
+        composeTestRule.setContent {
+            FoundITTheme {
+                AccountScreen()
+            }
+        }
+    }
+
+    @Test
+    fun testFoundITAppFullComposition() {
+        composeTestRule.setContent {
+            FoundITTheme {
+                FoundITApp()
+            }
+        }
     }
 }

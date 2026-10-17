@@ -8,10 +8,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="PLACEHOLDER" />
-                  <option name="mobileSdkAppId" value="" />
-                  <option name="projectId" value="" />
-                  <option name="projectNumber" value="" />
+                  <option name="appId" value="com.shashidhara.foundit" />
+                  <option name="mobileSdkAppId" value="1:240086993355:android:c1e9a1b6aa5b1665540e4e" />
+                  <option name="projectId" value="foundit-items" />
+                  <option name="projectNumber" value="240086993355" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />

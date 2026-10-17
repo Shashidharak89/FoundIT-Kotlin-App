@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
-    <style name="Theme.FoundIT" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.FoundIT" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">#FF16052E</item>
+        <item name="android:navigationBarColor">#FF0C0219</item>
+        <item name="android:windowBackground">#FF0C0219</item>
+    </style>
 </resources>
