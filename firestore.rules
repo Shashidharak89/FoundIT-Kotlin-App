@@ -23,8 +23,8 @@ service cloud.firestore {
     // User Profiles Collection: /users/{userId}
     // =========================================================================
     match /users/{userId} {
-      // Authenticated users can read member profiles
-      allow read: if isAuthenticated();
+      // User profiles are publicly readable so both unauthenticated guests and members can inspect author information
+      allow read: if true;
 
       // Only the user themselves can create their profile document
       // Role is restricted to 'USER' on client creation to prevent self-promotion
@@ -48,7 +48,8 @@ service cloud.firestore {
     // Community Lost & Found Posts Collection: /posts/{postId}
     // =========================================================================
     match /posts/{postId} {
-      // Community posts are publicly readable by guests and authenticated users
+      // All community posts (LOST and FOUND) are publicly visible and inspectable
+      // by all users, whether authenticated or unauthenticated (get and list queries)
       allow read: if true;
 
       // Authenticated users can create posts matching the approved schema
