@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -59,6 +60,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.SubcomposeAsyncImage
 import com.shashidhara.foundit.R
@@ -735,6 +737,19 @@ fun HomeScreen(
                         }
                     )
                 },
+                onTrackingChange = { newTracking ->
+                    postViewModel.updatePostTrackingStatus(
+                        post = post,
+                        newTrackingStatus = newTracking,
+                        onSuccess = {
+                            selectedPostForDetails = post.copy(trackingStatus = newTracking)
+                            Toast.makeText(context, "Tracking updated", Toast.LENGTH_SHORT).show()
+                        },
+                        onError = { error ->
+                            Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+                        }
+                    )
+                },
                 onNavigateToMyPosts = onNavigateToMyPosts,
                 onSubmitRequest = { message ->
                     if (currentUser != null) {
@@ -744,6 +759,7 @@ fun HomeScreen(
                             currentUser = currentUser,
                             message = message,
                             onSuccess = {
+                                selectedPostForDetails = post.copy(status = "PENDING")
                                 postViewModel.checkUserRequestForPost(post.id, currentUser.uid)
                             }
                         )
@@ -751,7 +767,14 @@ fun HomeScreen(
                 },
                 onCancelRequest = {
                     if (currentUser != null && currentRequest != null) {
-                        postViewModel.cancelPostRequest(currentRequest!!.id, post.id, currentUser.uid)
+                        postViewModel.cancelPostRequest(
+                            requestId = currentRequest!!.id,
+                            postId = post.id,
+                            currentUserUid = currentUser.uid,
+                            onSuccess = {
+                                selectedPostForDetails = post.copy(status = "OPEN")
+                            }
+                        )
                     }
                 }
             )
@@ -1086,6 +1109,7 @@ private fun PostDetailsDialog(
     onEditPost: () -> Unit,
     onDeletePost: () -> Unit,
     onStatusChange: (newStatus: String) -> Unit,
+    onTrackingChange: (newTracking: String) -> Unit,
     onNavigateToMyPosts: () -> Unit,
     onSubmitRequest: (message: String) -> Unit,
     onCancelRequest: () -> Unit
@@ -1104,21 +1128,25 @@ private fun PostDetailsDialog(
         } ?: "Recently posted"
     }
 
-    Dialog(onDismissRequest = onDismiss) {
+    // Modal popup width goes up to 97% of the screen width with structured padding
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
         Surface(
-            shape = RoundedCornerShape(20.dp),
+            shape = RoundedCornerShape(24.dp),
             color = ColorPureWhite,
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 16.dp)
-                .border(1.dp, AppBorderLight, RoundedCornerShape(20.dp))
+                .fillMaxWidth(0.97f)
+                .fillMaxHeight(0.94f)
+                .border(1.dp, AppBorderLight, RoundedCornerShape(24.dp))
         ) {
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(20.dp)
+                    .padding(18.dp)
             ) {
-                // Top Header with Status & Close Button
+                // Top Header: Type Badge, Role Badge, and Close Button
                 item {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -1126,7 +1154,6 @@ private fun PostDetailsDialog(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            // Status Badge
                             Box(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(8.dp))
@@ -1135,9 +1162,9 @@ private fun PostDetailsDialog(
                                     .padding(horizontal = 10.dp, vertical = 4.dp)
                             ) {
                                 Text(
-                                    text = "${post.status.uppercase()} • ${if (isFound) "FOUND" else "LOST"}",
+                                    text = if (isFound) "FOUND ITEM" else "LOST ITEM",
                                     fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
+                                    fontWeight = FontWeight.ExtraBold,
                                     color = if (isFound) BrandTealBase else TextPrimaryDark
                                 )
                             }
@@ -1181,7 +1208,7 @@ private fun PostDetailsDialog(
                             contentDescription = "Close",
                             tint = TextSecondarySlate,
                             modifier = Modifier
-                                .size(24.dp)
+                                .size(26.dp)
                                 .clip(CircleShape)
                                 .clickable { onDismiss() }
                         )
@@ -1190,18 +1217,276 @@ private fun PostDetailsDialog(
                     Spacer(modifier = Modifier.height(14.dp))
                 }
 
-                // Media Container (ExoPlayer for Video or AsyncImage for Photo)
+                // ========================================================
+                // 1. READONLY STATUS FIELD (Structured prominent display)
+                // ========================================================
                 item {
+                    val statusUpper = post.status.uppercase()
+                    val statusBg = when (statusUpper) {
+                        "OPEN" -> Color(0xFFF0FDF4)
+                        "PENDING" -> Color(0xFFFEF3C7)
+                        "RESOLVED" -> Color(0xFFEFF6FF)
+                        else -> AppSurfaceSubtle
+                    }
+                    val statusBorder = when (statusUpper) {
+                        "OPEN" -> Color(0xFFBBF7D0)
+                        "PENDING" -> Color(0xFFFDE68A)
+                        "RESOLVED" -> Color(0xFFBFDBFE)
+                        else -> AppBorderLight
+                    }
+                    val statusTextColor = when (statusUpper) {
+                        "OPEN" -> Color(0xFF15803D)
+                        "PENDING" -> Color(0xFFB45309)
+                        "RESOLVED" -> Color(0xFF1D4ED8)
+                        else -> TextPrimaryDark
+                    }
+
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(200.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(statusBg)
+                            .border(1.dp, statusBorder, RoundedCornerShape(12.dp))
+                            .padding(horizontal = 14.dp, vertical = 10.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "POST STATUS (READ-ONLY)",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = TextMutedSlate,
+                                    letterSpacing = 1.sp
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = when (statusUpper) {
+                                        "OPEN" -> "Active • Open for Requests"
+                                        "PENDING" -> "Claim Pending • Verification in Progress"
+                                        "RESOLVED" -> "Resolved • Handed Over / Completed"
+                                        "CLOSED" -> "Closed"
+                                        else -> statusUpper
+                                    },
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = statusTextColor
+                                )
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(ColorPureWhite)
+                                    .border(1.dp, statusBorder, RoundedCornerShape(8.dp))
+                                    .padding(horizontal = 10.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = statusUpper,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = statusTextColor
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+                }
+
+                // ========================================================
+                // 2. PRODUCT TRACKING (3 STAGES: Stranger, Security, Owner)
+                // ========================================================
+                item {
+                    val currentTracking = post.currentTracking
+                    val currentStepIndex = when (currentTracking) {
+                        PostItem.TRACKING_WITH_SECURITY -> 1
+                        PostItem.TRACKING_WITH_OWNER -> 2
+                        else -> 0 // WITH_STRANGER
+                    }
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
                             .clip(RoundedCornerShape(14.dp))
                             .background(AppSurfaceSubtle)
-                            .border(1.dp, AppBorderLight, RoundedCornerShape(14.dp)),
-                        contentAlignment = Alignment.Center
+                            .border(1.dp, AppBorderLight, RoundedCornerShape(14.dp))
+                            .padding(14.dp)
                     ) {
-                        if (mediaUrl.isNotBlank()) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "PRODUCT TRACKING",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = TextPrimaryDark,
+                                letterSpacing = 1.sp
+                            )
+
+                            Text(
+                                text = "WHERE IS THE PRODUCT?",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = BrandTealBase
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // 3-Stage Visual Stepper
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            val steps = listOf(
+                                "With Stranger/Finder" to PostItem.TRACKING_WITH_STRANGER,
+                                "With Security" to PostItem.TRACKING_WITH_SECURITY,
+                                "Owner Received" to PostItem.TRACKING_WITH_OWNER
+                            )
+
+                            steps.forEachIndexed { index, (label, _) ->
+                                val isPassed = index <= currentStepIndex
+                                val isCurrent = index == currentStepIndex
+
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(28.dp)
+                                            .clip(CircleShape)
+                                            .background(
+                                                if (isPassed) BrandTealBase else AppSurfaceWhite
+                                            )
+                                            .border(
+                                                1.5.dp,
+                                                if (isPassed) BrandTealBase else AppBorderLight,
+                                                CircleShape
+                                            ),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        if (isPassed) {
+                                            Icon(
+                                                imageVector = FoundITIcons.Check,
+                                                contentDescription = null,
+                                                tint = BrandMintBase,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                        } else {
+                                            Text(
+                                                text = "${index + 1}",
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = TextSecondarySlate
+                                            )
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.height(6.dp))
+
+                                    Text(
+                                        text = label,
+                                        fontSize = 10.sp,
+                                        fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium,
+                                        color = if (isCurrent) BrandTealBase else TextSecondarySlate,
+                                        textAlign = TextAlign.Center,
+                                        lineHeight = 13.sp
+                                    )
+                                }
+
+                                if (index < steps.size - 1) {
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(0.5f)
+                                            .height(2.dp)
+                                            .background(if (index < currentStepIndex) BrandTealBase else AppBorderLight)
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        // Status Description
+                        Text(
+                            text = when (currentTracking) {
+                                PostItem.TRACKING_WITH_SECURITY ->
+                                    "Current Location: Deposited with campus security / lost-and-found desk."
+                                PostItem.TRACKING_WITH_OWNER ->
+                                    "Current Location: Handed over and received by the verified owner."
+                                else ->
+                                    "Current Location: In possession of the stranger / reporter who found/posted it."
+                            },
+                            fontSize = 11.sp,
+                            color = TextSecondarySlate
+                        )
+
+                        // If Owner or Admin: Provide buttons to update product tracking
+                        if (isOwner || isAdmin) {
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(
+                                text = "Update Product Location:",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = TextMutedSlate
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                listOf(
+                                    "Stranger" to PostItem.TRACKING_WITH_STRANGER,
+                                    "Security" to PostItem.TRACKING_WITH_SECURITY,
+                                    "Owner Got" to PostItem.TRACKING_WITH_OWNER
+                                ).forEach { (chipLabel, trackingVal) ->
+                                    val isSelected = currentTracking == trackingVal
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(if (isSelected) BrandTealBase else ColorPureWhite)
+                                            .border(1.dp, if (isSelected) BrandTealBase else AppBorderLight, RoundedCornerShape(8.dp))
+                                            .clickable { onTrackingChange(trackingVal) }
+                                            .padding(vertical = 6.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = chipLabel,
+                                            fontSize = 10.sp,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                            color = if (isSelected) BrandMintBase else TextPrimaryDark
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+                }
+
+                // ========================================================
+                // 3. MEDIA CONTAINER (With or without image)
+                // ========================================================
+                item {
+                    if (mediaUrl.isNotBlank()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(210.dp)
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(AppSurfaceSubtle)
+                                .border(1.dp, AppBorderLight, RoundedCornerShape(14.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
                             if (post.isVideo) {
                                 FoundITVideoPlayer(
                                     videoUrl = mediaUrl,
@@ -1242,24 +1527,53 @@ private fun PostDetailsDialog(
                                     }
                                 )
                             }
-                        } else {
-                            Icon(
-                                imageVector = FoundITIcons.MediaImage,
-                                contentDescription = null,
-                                tint = BrandTealBase,
-                                modifier = Modifier.size(48.dp)
-                            )
+                        }
+                    } else {
+                        // Clean placeholder when user posted without image
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(AppSurfaceSubtle)
+                                .border(1.dp, AppBorderLight, RoundedCornerShape(14.dp))
+                                .padding(16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = FoundITIcons.Search,
+                                    contentDescription = null,
+                                    tint = BrandTealBase,
+                                    modifier = Modifier.size(26.dp)
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column {
+                                    Text(
+                                        text = "No Photo or Video Attached",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = TextPrimaryDark
+                                    )
+                                    Text(
+                                        text = "This item was posted with text description and location details.",
+                                        fontSize = 11.sp,
+                                        color = TextSecondarySlate
+                                    )
+                                }
+                            }
                         }
                     }
 
                     Spacer(modifier = Modifier.height(14.dp))
                 }
 
-                // Title, Description, Location, and Date
+                // ========================================================
+                // 4. TITLE, DESCRIPTION, LOCATION, CATEGORY & DATE
+                // ========================================================
                 item {
                     Text(
                         text = post.title,
-                        fontSize = 18.sp,
+                        fontSize = 19.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = TextPrimaryDark
                     )
@@ -1271,9 +1585,9 @@ private fun PostDetailsDialog(
                             imageVector = FoundITIcons.Location,
                             contentDescription = "Location",
                             tint = BrandTealBase,
-                            modifier = Modifier.size(15.dp)
+                            modifier = Modifier.size(16.dp)
                         )
-                        Spacer(modifier = Modifier.width(5.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = post.location.ifBlank { "Location unspecified" },
                             fontSize = 13.sp,
@@ -1286,17 +1600,14 @@ private fun PostDetailsDialog(
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = post.description,
-                            fontSize = 12.sp,
+                            fontSize = 13.sp,
                             color = TextSecondarySlate,
-                            lineHeight = 17.sp
+                            lineHeight = 18.sp
                         )
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))
-                }
 
-                // Category and Reporter Row (Privacy-safe: no email or private profile exposed)
-                item {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -1325,12 +1636,12 @@ private fun PostDetailsDialog(
                     Spacer(modifier = Modifier.height(16.dp))
                 }
 
-                // ==========================================
-                // CONTEXT-AWARE ACTIONS SECTION
-                // ==========================================
+                // ========================================================
+                // 5. CONTEXT-AWARE ACTIONS & CLAIM LIFECYCLE
+                // ========================================================
                 item {
                     if (currentUser == null) {
-                        // CASE A: GUEST USER (Not signed in)
+                        // CASE A: GUEST USER (Unauthenticated)
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -1350,7 +1661,7 @@ private fun PostDetailsDialog(
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "Sign in with Google to respond or submit a claim directly to the reporter.",
+                                    text = "Sign in with Google to request for this product or submit a claim directly.",
                                     fontSize = 12.sp,
                                     color = TextSecondarySlate,
                                     textAlign = TextAlign.Center
@@ -1366,7 +1677,7 @@ private fun PostDetailsDialog(
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
                                     Text(
-                                        text = if (isFound) "Sign in to Claim" else "Sign in to Respond",
+                                        text = if (isFound) "Sign in to Claim (It's Mine)" else "Sign in to Respond (I Found It)",
                                         fontSize = 13.sp,
                                         fontWeight = FontWeight.Bold
                                     )
@@ -1374,7 +1685,7 @@ private fun PostDetailsDialog(
                             }
                         }
                     } else if (isOwner) {
-                        // CASE B: SIGNED-IN OWNER VIEWING THEIR OWN POST
+                        // CASE B: POST OWNER
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -1392,12 +1703,63 @@ private fun PostDetailsDialog(
 
                             Spacer(modifier = Modifier.height(10.dp))
 
-                            // Status Transitions (OPEN, RESOLVED, CLOSED)
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                if (post.status.equals("OPEN", ignoreCase = true)) {
+                            if (post.status.equals("PENDING", ignoreCase = true)) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(Color(0xFFFEF3C7))
+                                        .border(1.dp, Color(0xFFFDE68A), RoundedCornerShape(8.dp))
+                                        .padding(10.dp)
+                                ) {
+                                    Column {
+                                        Text(
+                                            text = "A claim is currently pending on this item.",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFF92400E)
+                                        )
+                                        Text(
+                                            text = "You can verify and confirm the handover or reject if incorrect.",
+                                            fontSize = 10.sp,
+                                            color = Color(0xFFB45309)
+                                        )
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Button(
+                                        onClick = {
+                                            onStatusChange("RESOLVED")
+                                            onTrackingChange(PostItem.TRACKING_WITH_OWNER)
+                                        },
+                                        modifier = Modifier.weight(1f),
+                                        shape = RoundedCornerShape(8.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF059669)),
+                                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 6.dp)
+                                    ) {
+                                        Text("Confirm & Resolve", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = ColorPureWhite)
+                                    }
+
+                                    OutlinedButton(
+                                        onClick = { onStatusChange("OPEN") },
+                                        modifier = Modifier.weight(1f),
+                                        shape = RoundedCornerShape(8.dp),
+                                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 6.dp)
+                                    ) {
+                                        Text("Reject (Re-open)", fontSize = 11.sp, color = TextSecondarySlate)
+                                    }
+                                }
+                            } else if (post.status.equals("OPEN", ignoreCase = true)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
                                     Button(
                                         onClick = { onStatusChange("RESOLVED") },
                                         modifier = Modifier.weight(1f),
@@ -1416,22 +1778,21 @@ private fun PostDetailsDialog(
                                     ) {
                                         Text("Close Post", fontSize = 11.sp, color = TextSecondarySlate)
                                     }
-                                } else {
-                                    Button(
-                                        onClick = { onStatusChange("OPEN") },
-                                        modifier = Modifier.weight(1f),
-                                        shape = RoundedCornerShape(8.dp),
-                                        colors = ButtonDefaults.buttonColors(containerColor = BrandTealBase),
-                                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 6.dp)
-                                    ) {
-                                        Text("Re-open Report", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = BrandMintBase)
-                                    }
+                                }
+                            } else {
+                                Button(
+                                    onClick = { onStatusChange("OPEN") },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = BrandTealBase),
+                                    contentPadding = PaddingValues(horizontal = 6.dp, vertical = 6.dp)
+                                ) {
+                                    Text("Re-open Report to Community", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = BrandMintBase)
                                 }
                             }
 
                             Spacer(modifier = Modifier.height(10.dp))
 
-                            // Owner Action Buttons: Edit, Delete, View Claims
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -1470,14 +1831,14 @@ private fun PostDetailsDialog(
                                 Text("View Received Claims in Dashboard", fontSize = 11.sp, color = BrandTealBase)
                             }
                         }
-                    } else if (currentRequest != null) {
-                        // CASE C (Sub-case): User already submitted a request for this post (prevents duplicates)
+                    } else if (currentRequest != null && currentRequest.status == PostRequest.STATUS_PENDING) {
+                        // CASE C: USER WHO HAS REQUESTED THIS PRODUCT (Can cancel request -> post reverts to OPEN)
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(14.dp))
-                                .background(AppSurfaceSubtle)
-                                .border(1.dp, AppBorderLight, RoundedCornerShape(14.dp))
+                                .background(Color(0xFFFEF3C7))
+                                .border(1.dp, Color(0xFFFDE68A), RoundedCornerShape(14.dp))
                                 .padding(14.dp)
                         ) {
                             Column {
@@ -1490,32 +1851,20 @@ private fun PostDetailsDialog(
                                         text = "Your Submitted Request",
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = TextPrimaryDark
+                                        color = Color(0xFF92400E)
                                     )
 
                                     Box(
                                         modifier = Modifier
                                             .clip(RoundedCornerShape(6.dp))
-                                            .background(
-                                                when (currentRequest.status) {
-                                                    PostRequest.STATUS_ACCEPTED -> Color(0xFFDCFCE7)
-                                                    PostRequest.STATUS_REJECTED -> Color(0xFFFEE2E2)
-                                                    PostRequest.STATUS_CANCELLED -> Color(0xFFF1F5F9)
-                                                    else -> BrandMintBg
-                                                }
-                                            )
+                                            .background(ColorPureWhite)
                                             .padding(horizontal = 8.dp, vertical = 3.dp)
                                     ) {
                                         Text(
-                                            text = currentRequest.status,
+                                            text = "PENDING REVIEW",
                                             fontSize = 10.sp,
                                             fontWeight = FontWeight.Bold,
-                                            color = when (currentRequest.status) {
-                                                PostRequest.STATUS_ACCEPTED -> Color(0xFF166534)
-                                                PostRequest.STATUS_REJECTED -> Color(0xFF991B1B)
-                                                PostRequest.STATUS_CANCELLED -> TextSecondarySlate
-                                                else -> BrandTealBase
-                                            }
+                                            color = Color(0xFFB45309)
                                         )
                                     }
                                 }
@@ -1525,21 +1874,74 @@ private fun PostDetailsDialog(
                                 Text(
                                     text = "\"${currentRequest.message}\"",
                                     fontSize = 12.sp,
-                                    color = TextSecondarySlate
+                                    color = Color(0xFF78350F)
                                 )
 
-                                if (currentRequest.status == PostRequest.STATUS_PENDING) {
-                                    Spacer(modifier = Modifier.height(10.dp))
-                                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                                        TextButton(onClick = onCancelRequest) {
-                                            Text("Cancel Request", fontSize = 11.sp, color = Color(0xFFDC2626))
-                                        }
+                                Spacer(modifier = Modifier.height(10.dp))
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "Post status is locked while pending.",
+                                        fontSize = 10.sp,
+                                        color = Color(0xFF92400E)
+                                    )
+
+                                    Button(
+                                        onClick = onCancelRequest,
+                                        shape = RoundedCornerShape(8.dp),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = Color(0xFFDC2626),
+                                            contentColor = ColorPureWhite
+                                        ),
+                                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                                    ) {
+                                        Text("Cancel Request", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                                     }
                                 }
                             }
                         }
+                    } else if (post.status.equals("PENDING", ignoreCase = true)) {
+                        // CASE D: OTHER USER VIEWING WHEN POST IS ALREADY REQUESTED (LOCKED STATE)
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(AppSurfaceSubtle)
+                                .border(1.dp, AppBorderLight, RoundedCornerShape(14.dp))
+                                .padding(16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(
+                                    imageVector = FoundITIcons.Lock,
+                                    contentDescription = "Locked",
+                                    tint = BrandTealBase,
+                                    modifier = Modifier.size(28.dp)
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "Product Request Under Review",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = TextPrimaryDark,
+                                    textAlign = TextAlign.Center
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "A user has already requested this product. In this stage, new requests are locked. If the request is cancelled or rejected, this item will reopen to the community.",
+                                    fontSize = 11.sp,
+                                    color = TextSecondarySlate,
+                                    textAlign = TextAlign.Center,
+                                    lineHeight = 16.sp
+                                )
+                            }
+                        }
                     } else if (!post.status.equals("OPEN", ignoreCase = true)) {
-                        // CASE C (Sub-case): Post is closed or resolved
+                        // CASE E: POST IS RESOLVED OR CLOSED
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -1549,14 +1951,14 @@ private fun PostDetailsDialog(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = "This post is currently ${post.status.uppercase()} and is no longer accepting new responses.",
+                                text = "This post is currently ${post.status.uppercase()} and is no longer accepting requests.",
                                 fontSize = 12.sp,
                                 color = TextMutedSlate,
                                 textAlign = TextAlign.Center
                             )
                         }
                     } else {
-                        // CASE C: ELIGIBLE SIGNED-IN USER VIEWING SOMEONE ELSE'S OPEN POST
+                        // CASE F: ELIGIBLE USER VIEWING AN OPEN POST (Can request)
                         if (!isWritingResponse) {
                             Button(
                                 onClick = { isWritingResponse = true },
@@ -1570,7 +1972,7 @@ private fun PostDetailsDialog(
                                 )
                             ) {
                                 Text(
-                                    text = if (isFound) "This Might Be Mine (Submit Claim)" else "I Found This Item (Respond)",
+                                    text = if (isFound) "Request for Product (This is My Product)" else "I Found This Product (Respond)",
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = BrandMintBase
@@ -1586,13 +1988,22 @@ private fun PostDetailsDialog(
                                     .padding(14.dp)
                             ) {
                                 Text(
-                                    text = if (isFound) "Submit Claim to Post Owner" else "Respond to Post Owner",
+                                    text = if (isFound) "Request Product (Claim Ownership)" else "Report Product Found",
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = TextPrimaryDark
                                 )
 
-                                Spacer(modifier = Modifier.height(8.dp))
+                                Spacer(modifier = Modifier.height(4.dp))
+
+                                Text(
+                                    text = if (isFound) "Once submitted, the post status will change to Pending and will lock new requests."
+                                    else "Once submitted, the post status will change to Pending for owner verification.",
+                                    fontSize = 11.sp,
+                                    color = TextSecondarySlate
+                                )
+
+                                Spacer(modifier = Modifier.height(10.dp))
 
                                 OutlinedTextField(
                                     value = requestMessage,
@@ -1648,7 +2059,7 @@ private fun PostDetailsDialog(
                                             )
                                         } else {
                                             Text(
-                                                text = "Send Claim",
+                                                text = if (isFound) "Submit Product Request" else "Submit Found Report",
                                                 fontSize = 12.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 color = BrandMintBase

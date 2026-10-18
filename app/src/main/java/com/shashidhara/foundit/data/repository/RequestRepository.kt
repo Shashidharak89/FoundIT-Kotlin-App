@@ -5,6 +5,7 @@ import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
+import com.shashidhara.foundit.data.model.CaseLifecycle
 import com.shashidhara.foundit.data.model.PostRequest
 import com.shashidhara.foundit.data.model.UserProfile
 import kotlinx.coroutines.channels.awaitClose
@@ -52,6 +53,13 @@ class RequestRepository(
 
             Log.d(TAG, "Submitting request $requestId for post $postId from requester ${requester.uid}")
             firestore.collection(REQUESTS_COLLECTION).document(requestId).set(requestData).await()
+
+            // Synchronize post status to PENDING so that new requests are locked
+            val postUpdates = hashMapOf<String, Any>(
+                "status" to CaseLifecycle.STATUS_PENDING,
+                "updatedAt" to FieldValue.serverTimestamp()
+            )
+            firestore.collection(POSTS_COLLECTION).document(postId).update(postUpdates).await()
 
             val createdRequest = PostRequest(
                 id = requestId,
@@ -220,15 +228,24 @@ class RequestRepository(
     }
 
     /**
-     * Requester cancels their pending request.
+     * Requester cancels their pending request, reverting post status back to OPEN.
      */
-    suspend fun cancelRequest(requestId: String): Result<Unit> {
+    suspend fun cancelRequest(requestId: String, postId: String? = null): Result<Unit> {
         return try {
             val updates = hashMapOf<String, Any>(
                 "status" to PostRequest.STATUS_CANCELLED,
                 "updatedAt" to FieldValue.serverTimestamp()
             )
             firestore.collection(REQUESTS_COLLECTION).document(requestId).update(updates).await()
+
+            if (!postId.isNullOrBlank()) {
+                val postUpdates = hashMapOf<String, Any>(
+                    "status" to CaseLifecycle.STATUS_OPEN,
+                    "updatedAt" to FieldValue.serverTimestamp()
+                )
+                firestore.collection(POSTS_COLLECTION).document(postId).update(postUpdates).await()
+            }
+
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to cancel request $requestId: ${e.message}", e)

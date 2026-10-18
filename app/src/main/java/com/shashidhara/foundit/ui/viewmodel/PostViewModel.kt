@@ -250,7 +250,14 @@ class PostViewModel(
 
             if (result.isSuccess) {
                 _currentPostRequest.value = result.getOrNull()
-                _requestFeedback.value = "Request submitted successfully! The owner will be notified."
+                _requestFeedback.value = "Request submitted successfully! Post status is now Pending."
+                _feedUiState.update { state ->
+                    state.copy(
+                        posts = state.posts.map {
+                            if (it.id == postId) it.copy(status = "PENDING") else it
+                        }
+                    )
+                }
                 onSuccess()
             } else {
                 _requestFeedback.value = result.exceptionOrNull()?.message ?: "Failed to submit request."
@@ -262,14 +269,52 @@ class PostViewModel(
         _requestFeedback.value = null
     }
 
-    fun cancelPostRequest(requestId: String, postId: String, currentUserUid: String) {
+    fun cancelPostRequest(
+        requestId: String,
+        postId: String,
+        currentUserUid: String,
+        onSuccess: () -> Unit = {}
+    ) {
         viewModelScope.launch {
-            val result = requestRepository.cancelRequest(requestId)
+            val result = requestRepository.cancelRequest(requestId, postId)
             if (result.isSuccess) {
-                _requestFeedback.value = "Your request was cancelled."
+                _requestFeedback.value = "Your request was cancelled. Post status reopened to OPEN."
+                _currentPostRequest.value = null
+                _feedUiState.update { state ->
+                    state.copy(
+                        posts = state.posts.map {
+                            if (it.id == postId) it.copy(status = "OPEN") else it
+                        }
+                    )
+                }
                 checkUserRequestForPost(postId, currentUserUid)
+                onSuccess()
             } else {
                 _requestFeedback.value = result.exceptionOrNull()?.message ?: "Failed to cancel request."
+            }
+        }
+    }
+
+    fun updatePostTrackingStatus(
+        post: PostItem,
+        newTrackingStatus: String,
+        onSuccess: () -> Unit = {},
+        onError: (String) -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            val result = postRepository.updateTrackingStatus(post.id, newTrackingStatus)
+            if (result.isSuccess) {
+                _feedUiState.update { state ->
+                    state.copy(
+                        posts = state.posts.map {
+                            if (it.id == post.id) it.copy(trackingStatus = newTrackingStatus) else it
+                        }
+                    )
+                }
+                onSuccess()
+            } else {
+                val errorMsg = result.exceptionOrNull()?.localizedMessage ?: "Failed to update tracking."
+                onError(errorMsg)
             }
         }
     }
@@ -490,18 +535,10 @@ class PostViewModel(
         val mediaUri = _selectedMediaUri.value
         val existingUpload = _uploadedMedia.value
 
-        if (mediaUri == null && existingUpload == null) {
-            _submissionState.value = SubmissionState.Error(
-                message = "Please select a photo or video proof from your device.",
-                canRetrySave = false
-            )
-            return
-        }
-
         viewModelScope.launch {
             var mediaResult = existingUpload
 
-            // Step 1: Upload to Cloudinary (skip if already uploaded during a previous retry)
+            // Step 1: Upload to Cloudinary if media was selected (optional)
             if (mediaResult == null && mediaUri != null) {
                 _submissionState.value = SubmissionState.Uploading(0.05f)
                 val uploadResult = cloudinaryRepository.uploadMedia(
@@ -528,15 +565,7 @@ class PostViewModel(
                 _uploadedMedia.value = mediaResult
             }
 
-            if (mediaResult == null) {
-                _submissionState.value = SubmissionState.Error(
-                    message = "Media upload could not be verified.",
-                    canRetrySave = false
-                )
-                return@launch
-            }
-
-            // Step 2: Save to Firestore matching the exact schema required by security rules
+            // Step 2: Save to Firestore (works with or without media)
             _submissionState.value = SubmissionState.SavingToFirestore
             val cleanType = if (_postType.value.equals("FOUND", ignoreCase = true)) "FOUND" else "LOST"
 
@@ -547,9 +576,10 @@ class PostViewModel(
                 description = _description.value.trim(),
                 category = _category.value.ifBlank { "Other" },
                 location = trimmedLocation,
-                imageUrl = mediaResult.secureUrl,
-                imagePublicId = mediaResult.publicId,
-                status = "OPEN"
+                imageUrl = mediaResult?.secureUrl.orEmpty(),
+                imagePublicId = mediaResult?.publicId.orEmpty(),
+                status = "OPEN",
+                trackingStatus = PostItem.TRACKING_WITH_STRANGER
             )
 
             Log.d(TAG, "Initiating Firestore write for ownerUid=$ownerUid, type=$cleanType, status=OPEN")

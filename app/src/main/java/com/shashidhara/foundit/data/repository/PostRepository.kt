@@ -42,6 +42,7 @@ class PostRepository(
                 "imageUrl" to post.imageUrl,
                 "imagePublicId" to post.imagePublicId,
                 "status" to "OPEN",
+                "trackingStatus" to if (post.trackingStatus.isNotBlank()) post.trackingStatus else PostItem.TRACKING_WITH_STRANGER,
                 "createdAt" to FieldValue.serverTimestamp()
             )
 
@@ -72,7 +73,8 @@ class PostRepository(
         status: String,
         type: String? = null,
         imageUrl: String? = null,
-        imagePublicId: String? = null
+        imagePublicId: String? = null,
+        trackingStatus: String? = null
     ): Result<Unit> {
         return try {
             val updates = hashMapOf<String, Any>(
@@ -92,12 +94,51 @@ class PostRepository(
             if (imagePublicId != null) {
                 updates["imagePublicId"] = imagePublicId
             }
+            if (!trackingStatus.isNullOrBlank()) {
+                updates["trackingStatus"] = trackingStatus
+            }
 
             firestore.collection(POSTS_COLLECTION).document(postId).update(updates).await()
             Log.d(TAG, "Post $postId updated successfully")
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to update post $postId: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Updates post tracking status (WITH_STRANGER, WITH_SECURITY, WITH_OWNER).
+     */
+    suspend fun updateTrackingStatus(postId: String, trackingStatus: String): Result<Unit> {
+        return try {
+            val updates = hashMapOf<String, Any>(
+                "trackingStatus" to trackingStatus,
+                "updatedAt" to FieldValue.serverTimestamp()
+            )
+            firestore.collection(POSTS_COLLECTION).document(postId).update(updates).await()
+            Log.d(TAG, "Post $postId tracking status updated to $trackingStatus")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to update tracking status for post $postId: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Directly updates the status of a post (OPEN, PENDING, RESOLVED, CLOSED).
+     */
+    suspend fun updatePostStatus(postId: String, newStatus: String): Result<Unit> {
+        return try {
+            val updates = hashMapOf<String, Any>(
+                "status" to newStatus,
+                "updatedAt" to FieldValue.serverTimestamp()
+            )
+            firestore.collection(POSTS_COLLECTION).document(postId).update(updates).await()
+            Log.d(TAG, "Post $postId status updated to $newStatus")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to update status for post $postId to $newStatus: ${e.message}", e)
             Result.failure(e)
         }
     }
@@ -324,6 +365,7 @@ class PostRepository(
                 imageUrl = doc.getString("imageUrl") ?: doc.getString("mediaUrl").orEmpty(),
                 imagePublicId = doc.getString("imagePublicId") ?: doc.getString("mediaPublicId").orEmpty(),
                 status = doc.getString("status") ?: "OPEN",
+                trackingStatus = doc.getString("trackingStatus") ?: doc.getString("custodyStatus") ?: PostItem.TRACKING_WITH_STRANGER,
                 createdAt = doc.getTimestamp("createdAt"),
                 updatedAt = doc.getTimestamp("updatedAt")
             )

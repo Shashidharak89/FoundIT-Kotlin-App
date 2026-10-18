@@ -27,9 +27,23 @@ data class PostItem(
     val imageUrl: String = "",
     val imagePublicId: String = "",
     val status: String = "OPEN",
+    val trackingStatus: String = TRACKING_WITH_STRANGER,
     val createdAt: Timestamp? = null,
     val updatedAt: Timestamp? = null
 ) {
+    companion object {
+        const val TRACKING_WITH_STRANGER = "WITH_STRANGER"
+        const val TRACKING_WITH_SECURITY = "WITH_SECURITY"
+        const val TRACKING_WITH_OWNER = "WITH_OWNER"
+    }
+
+    val currentTracking: String
+        get() = when {
+            trackingStatus.isNotBlank() -> trackingStatus
+            status.equals("WITH_SECURITY", ignoreCase = true) -> TRACKING_WITH_SECURITY
+            status.equals("RETURNED_TO_OWNER", ignoreCase = true) || status.equals("RESOLVED", ignoreCase = true) -> TRACKING_WITH_OWNER
+            else -> TRACKING_WITH_STRANGER
+        }
     // UI convenience properties
     val isVideo: Boolean
         get() = imageUrl.contains("/video/") ||

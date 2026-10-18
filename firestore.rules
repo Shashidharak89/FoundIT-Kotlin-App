@@ -52,7 +52,7 @@ service cloud.firestore {
       // by all users, whether authenticated or unauthenticated (get and list queries)
       allow read: if true;
 
-      // Authenticated users can create posts matching the approved schema
+      // Authenticated users can create posts matching the approved schema (with or without image)
       allow create: if isAuthenticated()
                     && request.resource.data.ownerUid == request.auth.uid
                     && (request.resource.data.type == 'LOST' || request.resource.data.type == 'FOUND')
@@ -67,12 +67,13 @@ service cloud.firestore {
                     && request.resource.data.keys().hasOnly([
                          'ownerUid', 'type', 'title', 'description',
                          'category', 'location', 'imageUrl', 'imagePublicId',
-                         'status', 'createdAt', 'updatedAt'
+                         'status', 'trackingStatus', 'createdAt', 'updatedAt'
                        ]);
 
       // Updates:
-      // Case 1: Post owner can update their post without altering ownerUid or createdAt
-      // Case 2: Authorized ADMIN can update post status (including security custody transitions) and post details
+      // Case 1: Post owner can update their post, status, or custody tracking
+      // Case 2: Authenticated claimant can claim an OPEN post (setting status to PENDING) or cancel (reverting to OPEN)
+      // Case 3: Authorized ADMIN can update post status (including security custody transitions) and post details
       allow update: if isAuthenticated()
                     && (
                       // Normal Owner Update
@@ -87,8 +88,26 @@ service cloud.firestore {
                        && request.resource.data.keys().hasOnly([
                             'ownerUid', 'userId', 'type', 'title', 'description',
                             'category', 'location', 'imageUrl', 'imagePublicId',
-                            'status', 'createdAt', 'updatedAt'
+                            'status', 'trackingStatus', 'createdAt', 'updatedAt'
                           ]))
+                      ||
+                      // Claim Lifecycle: Transition OPEN -> PENDING (when requesting product) or PENDING -> OPEN (on cancellation)
+                      (
+                        (!('ownerUid' in resource.data) || request.resource.data.ownerUid == resource.data.ownerUid)
+                        && (!('createdAt' in resource.data) || request.resource.data.createdAt == resource.data.createdAt)
+                        && request.resource.data.type == resource.data.type
+                        && request.resource.data.title == resource.data.title
+                        && request.resource.data.location == resource.data.location
+                        && (
+                             (resource.data.status == 'OPEN' && request.resource.data.status == 'PENDING') ||
+                             (resource.data.status == 'PENDING' && request.resource.data.status == 'OPEN')
+                           )
+                        && request.resource.data.keys().hasOnly([
+                             'ownerUid', 'userId', 'type', 'title', 'description',
+                             'category', 'location', 'imageUrl', 'imagePublicId',
+                             'status', 'trackingStatus', 'createdAt', 'updatedAt'
+                           ])
+                      )
                       ||
                       // Admin Case Custody / Status / Record Update
                       (isAdmin()

@@ -233,7 +233,7 @@ fun CreatePostScreen(
         item {
             Spacer(modifier = Modifier.height(20.dp))
             Text(
-                text = "MEDIA PROOF (IMAGE OR VIDEO)",
+                text = "MEDIA PROOF (OPTIONAL)",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 color = TextSecondarySlate,
@@ -367,14 +367,14 @@ fun CreatePostScreen(
                         }
                         Spacer(modifier = Modifier.height(10.dp))
                         Text(
-                            text = "Tap to Select Photo or Video",
+                            text = "Add Photo or Video (Optional)",
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
                             color = TextPrimaryDark
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "JPG, PNG, MP4, MOV supported • Photo Picker",
+                            text = "JPG, PNG, MP4, MOV • You can also publish without an image",
                             fontSize = 11.sp,
                             color = TextSecondarySlate
                         )
