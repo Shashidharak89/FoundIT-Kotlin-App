@@ -196,7 +196,8 @@ fun CreatePostScreen(
                     modifier = Modifier
                         .weight(1f)
                         .clip(RoundedCornerShape(10.dp))
-                        .background(if (isLostSelected) BrandTealBase else Color.Transparent)
+                        .background(if (isLostSelected) BrandMintBg else Color.Transparent)
+                        .border(1.dp, if (isLostSelected) BrandMintBase else Color.Transparent, RoundedCornerShape(10.dp))
                         .clickable { postViewModel.setPostType("LOST") }
                         .padding(vertical = 10.dp),
                     contentAlignment = Alignment.Center
@@ -205,7 +206,7 @@ fun CreatePostScreen(
                         text = "I LOST AN ITEM",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        color = if (isLostSelected) ColorPureWhite else TextSecondarySlate
+                        color = if (isLostSelected) BrandTealBase else TextSecondarySlate
                     )
                 }
 
@@ -214,7 +215,8 @@ fun CreatePostScreen(
                     modifier = Modifier
                         .weight(1f)
                         .clip(RoundedCornerShape(10.dp))
-                        .background(if (isFoundSelected) BrandTealBase else Color.Transparent)
+                        .background(if (isFoundSelected) BrandMintBg else Color.Transparent)
+                        .border(1.dp, if (isFoundSelected) BrandMintBase else Color.Transparent, RoundedCornerShape(10.dp))
                         .clickable { postViewModel.setPostType("FOUND") }
                         .padding(vertical = 10.dp),
                     contentAlignment = Alignment.Center
@@ -223,7 +225,7 @@ fun CreatePostScreen(
                         text = "I FOUND AN ITEM",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        color = if (isFoundSelected) ColorPureWhite else TextSecondarySlate
+                        color = if (isFoundSelected) BrandTealBase else TextSecondarySlate
                     )
                 }
             }
@@ -407,10 +409,10 @@ fun CreatePostScreen(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(16.dp))
-                            .background(if (isSelected) BrandTealBase else ColorPureWhite)
+                            .background(if (isSelected) BrandMintBg else ColorPureWhite)
                             .border(
                                 1.dp,
-                                if (isSelected) BrandTealBase else AppBorderLight,
+                                if (isSelected) BrandMintBase else AppBorderLight,
                                 RoundedCornerShape(16.dp)
                             )
                             .clickable(enabled = !isSubmitting) { postViewModel.setCategory(cat) }
@@ -420,7 +422,7 @@ fun CreatePostScreen(
                             text = cat,
                             fontSize = 12.sp,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                            color = if (isSelected) ColorPureWhite else TextSecondarySlate
+                            color = if (isSelected) BrandTealBase else TextSecondarySlate
                         )
                     }
                 }

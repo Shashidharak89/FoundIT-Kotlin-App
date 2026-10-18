@@ -61,100 +61,64 @@ fun FoundITTopBar(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // Left: Hamburger Menu Button
+            // Left: Brand Emblem + Title
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(
+                Image(
+                    painter = painterResource(id = R.drawable.foundit_logo),
+                    contentDescription = "FoundIT Logo",
+                    contentScale = ContentScale.Fit,
                     modifier = Modifier
-                        .size(44.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(AppSurfaceSubtle)
-                        .border(1.dp, AppBorderLight, RoundedCornerShape(12.dp))
-                        .clickable { onMenuClick() },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = FoundITIcons.Menu,
-                        contentDescription = "Open Sidebar Navigation",
-                        tint = BrandTealBase,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
+                        .size(38.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                )
 
-                Spacer(modifier = Modifier.width(14.dp))
+                Spacer(modifier = Modifier.width(10.dp))
 
-                // Brand Emblem + Title
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.foundit_logo),
-                        contentDescription = "FoundIT Logo",
-                        contentScale = ContentScale.Fit,
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                    )
-
-                    Spacer(modifier = Modifier.width(10.dp))
-
-                    Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = "Found",
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = TextPrimaryDark,
-                                letterSpacing = (-0.5).sp
-                            )
-                            Text(
-                                text = "IT",
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Black,
-                                color = BrandTealBase,
-                                letterSpacing = (-0.5).sp
-                            )
-                        }
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = currentScreen.title.uppercase(),
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = TextSecondarySlate,
-                            letterSpacing = 1.2.sp
+                            text = "Found",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = TextPrimaryDark,
+                            letterSpacing = (-0.5).sp
+                        )
+                        Text(
+                            text = "IT",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Black,
+                            color = BrandTealBase,
+                            letterSpacing = (-0.5).sp
                         )
                     }
+                    Text(
+                        text = currentScreen.title.uppercase(),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = TextSecondarySlate,
+                        letterSpacing = 1.2.sp
+                    )
                 }
             }
 
-            // Right: Status / Notification Badge
-            Row(
-                verticalAlignment = Alignment.CenterVertically
+            // Right: Hamburger Menu Button (Sidebar trigger)
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(AppSurfaceSubtle)
+                    .border(1.dp, AppBorderLight, RoundedCornerShape(12.dp))
+                    .clickable { onMenuClick() },
+                contentAlignment = Alignment.Center
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(AppSurfaceSubtle)
-                        .border(1.dp, AppBorderLight, CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = FoundITIcons.Notifications,
-                        contentDescription = "Notifications",
-                        tint = BrandTealBase,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    // Notification indicator dot in Mint with Teal border
-                    Box(
-                        modifier = Modifier
-                            .size(8.dp)
-                            .align(Alignment.TopEnd)
-                            .padding(top = 2.dp, end = 2.dp)
-                            .clip(CircleShape)
-                            .background(BrandMintBase)
-                    )
-                }
+                Icon(
+                    imageVector = FoundITIcons.Menu,
+                    contentDescription = "Open Sidebar Navigation",
+                    tint = BrandTealBase,
+                    modifier = Modifier.size(24.dp)
+                )
             }
         }
 

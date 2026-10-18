@@ -70,7 +70,7 @@ fun FoundITSidebar(
             .width(310.dp)
             .fillMaxHeight(),
         drawerContainerColor = ColorPureWhite,
-        drawerShape = RoundedCornerShape(topEnd = 24.dp, bottomEnd = 24.dp)
+        drawerShape = RoundedCornerShape(topStart = 24.dp, bottomStart = 24.dp)
     ) {
         Column(
             modifier = Modifier

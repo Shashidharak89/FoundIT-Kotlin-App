@@ -167,7 +167,8 @@ fun HomeScreen(
                         .fillMaxWidth()
                         .padding(16.dp)
                         .clip(RoundedCornerShape(22.dp))
-                        .background(BrandTealBase)
+                        .background(BrandMintBg)
+                        .border(1.dp, BrandMintBase, RoundedCornerShape(22.dp))
                         .padding(20.dp)
                 ) {
                     Column {
@@ -180,8 +181,8 @@ fun HomeScreen(
                             Row(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(20.dp))
-                                    .background(ColorPureWhite.copy(alpha = 0.12f))
-                                    .border(1.dp, BrandMintBase.copy(alpha = 0.35f), RoundedCornerShape(20.dp))
+                                    .background(ColorPureWhite)
+                                    .border(1.dp, BrandMintBase, RoundedCornerShape(20.dp))
                                     .padding(horizontal = 10.dp, vertical = 4.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
@@ -189,14 +190,14 @@ fun HomeScreen(
                                     modifier = Modifier
                                         .size(6.dp)
                                         .clip(CircleShape)
-                                        .background(BrandMintBase)
+                                        .background(BrandTealBase)
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
                                     text = if (currentUser != null) "LOGGED IN • NETWORK ACTIVE" else "PUBLIC COMMUNITY FEED",
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = ColorPureWhite,
+                                    color = BrandTealBase,
                                     letterSpacing = 1.sp
                                 )
                             }
@@ -217,7 +218,7 @@ fun HomeScreen(
                             text = "Find What You Lost.\nReturn What You Found.",
                             fontSize = 22.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            color = ColorPureWhite,
+                            color = BrandTealBase,
                             lineHeight = 28.sp
                         )
 
@@ -226,7 +227,7 @@ fun HomeScreen(
                         Text(
                             text = "A secure community lost-and-found network. Real-time items posted directly by people around you.",
                             fontSize = 13.sp,
-                            color = ColorPureWhite.copy(alpha = 0.85f),
+                            color = TextSecondarySlate,
                             lineHeight = 18.sp
                         )
 
@@ -250,8 +251,8 @@ fun HomeScreen(
                                     .height(44.dp),
                                 shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = BrandMintBase,
-                                    contentColor = BrandTealBase
+                                    containerColor = BrandTealBase,
+                                    contentColor = ColorPureWhite
                                 )
                             ) {
                                 Text(
@@ -274,10 +275,10 @@ fun HomeScreen(
                                     .height(44.dp),
                                 shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = ColorPureWhite.copy(alpha = 0.15f),
-                                    contentColor = ColorPureWhite
+                                    containerColor = ColorPureWhite,
+                                    contentColor = BrandTealBase
                                 ),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, ColorPureWhite.copy(alpha = 0.35f))
+                                border = androidx.compose.foundation.BorderStroke(1.dp, BrandMintBase)
                             ) {
                                 Text(
                                     text = "I Found Something",
@@ -1074,14 +1075,15 @@ private fun RecentPostCard(
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(6.dp))
-                                .background(BrandTealBase)
+                                .background(BrandMintBg)
+                                .border(1.dp, BrandMintBase, RoundedCornerShape(6.dp))
                                 .padding(horizontal = 8.dp, vertical = 2.dp)
                         ) {
                             Text(
                                 text = if (isFound) "Claim" else "Respond",
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = BrandMintBase
+                                color = BrandTealBase
                             )
                         }
                     }
@@ -1191,14 +1193,15 @@ private fun PostDetailsDialog(
                                 Box(
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(8.dp))
-                                        .background(BrandTealBase)
+                                        .background(BrandMintBg)
+                                        .border(1.dp, BrandMintBase, RoundedCornerShape(8.dp))
                                         .padding(horizontal = 8.dp, vertical = 4.dp)
                                 ) {
                                     Text(
                                         text = "ADMIN VIEW",
                                         fontSize = 10.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = BrandMintBase
+                                        color = BrandTealBase
                                     )
                                 }
                             }
@@ -1709,10 +1712,11 @@ private fun PostDetailsDialog(
                                 Box(
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(6.dp))
-                                        .background(BrandTealBase)
+                                        .background(BrandMintBg)
+                                        .border(1.dp, BrandMintBase, RoundedCornerShape(6.dp))
                                         .padding(horizontal = 6.dp, vertical = 2.dp)
                                 ) {
-                                    Text("ADMIN ONLY", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = BrandMintBase)
+                                    Text("ADMIN ONLY", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = BrandTealBase)
                                 }
                             }
 

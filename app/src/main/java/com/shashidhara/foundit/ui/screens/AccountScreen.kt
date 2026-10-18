@@ -24,8 +24,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -37,7 +35,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -74,10 +71,6 @@ fun AccountScreen(
     val errorMessage by authViewModel.errorMessage.collectAsState()
 
     val currentProfile = (authState as? AuthState.Authenticated)?.profile
-
-    var matchAlertsEnabled by remember { mutableStateOf(true) }
-    var locationSharingEnabled by remember { mutableStateOf(true) }
-    var twoFactorEnabled by remember { mutableStateOf(false) }
 
     LazyColumn(
         modifier = modifier
@@ -288,75 +281,7 @@ fun AccountScreen(
             }
         }
 
-        // Section: Personal Information
-        item {
-            Spacer(modifier = Modifier.height(20.dp))
-            Text(
-                text = "PERSONAL INFORMATION",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = TextSecondarySlate,
-                letterSpacing = 1.2.sp,
-                modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
-            )
 
-            AccountCardGroup {
-                AccountInfoRow(
-                    icon = FoundITIcons.Email,
-                    label = "Email Address",
-                    value = currentProfile?.email?.ifBlank { "Not connected" } ?: "Not connected"
-                )
-                AccountInfoRow(
-                    icon = FoundITIcons.Phone,
-                    label = "Emergency Phone",
-                    value = if (currentProfile != null) "+1 (555) 438-2910" else "Add phone number"
-                )
-                AccountInfoRow(
-                    icon = FoundITIcons.Location,
-                    label = "Primary City",
-                    value = "San Francisco, CA",
-                    showDivider = false
-                )
-            }
-        }
-
-        // Section: Preferences & Security
-        item {
-            Spacer(modifier = Modifier.height(20.dp))
-            Text(
-                text = "PREFERENCES & SECURITY",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = TextSecondarySlate,
-                letterSpacing = 1.2.sp,
-                modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
-            )
-
-            AccountCardGroup {
-                AccountToggleRow(
-                    icon = FoundITIcons.Notifications,
-                    title = "Instant Match Alerts",
-                    description = "Notify when someone reports an item matching yours",
-                    checked = matchAlertsEnabled,
-                    onCheckedChange = { matchAlertsEnabled = it }
-                )
-                AccountToggleRow(
-                    icon = FoundITIcons.Shield,
-                    title = "Radius Privacy Shield",
-                    description = "Fuzz exact return spot until contact is verified",
-                    checked = locationSharingEnabled,
-                    onCheckedChange = { locationSharingEnabled = it }
-                )
-                AccountToggleRow(
-                    icon = FoundITIcons.Lock,
-                    title = "Two-Factor Auth (2FA)",
-                    description = "Require authenticator confirmation on login",
-                    checked = twoFactorEnabled,
-                    onCheckedChange = { twoFactorEnabled = it },
-                    showDivider = false
-                )
-            }
-        }
 
         if (errorMessage != null) {
             item {
@@ -548,161 +473,3 @@ private fun ProfileMetric(
     }
 }
 
-@Composable
-private fun AccountCardGroup(
-    content: @Composable () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(ColorPureWhite)
-            .border(1.dp, AppBorderLight, RoundedCornerShape(16.dp))
-            .padding(horizontal = 16.dp, vertical = 6.dp)
-    ) {
-        Column {
-            content()
-        }
-    }
-}
-
-@Composable
-private fun AccountInfoRow(
-    icon: ImageVector,
-    label: String,
-    value: String,
-    showDivider: Boolean = true
-) {
-    Column {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(AppSurfaceSubtle)
-                    .border(1.dp, AppBorderLight, RoundedCornerShape(10.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = label,
-                    tint = BrandTealBase,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.width(14.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = label,
-                    fontSize = 11.sp,
-                    color = TextSecondarySlate
-                )
-                Text(
-                    text = value,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = TextPrimaryDark
-                )
-            }
-
-            Icon(
-                imageVector = FoundITIcons.ChevronRight,
-                contentDescription = null,
-                tint = TextMutedSlate,
-                modifier = Modifier.size(18.dp)
-            )
-        }
-
-        if (showDivider) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(1.dp)
-                    .background(AppBorderLight)
-            )
-        }
-    }
-}
-
-@Composable
-private fun AccountToggleRow(
-    icon: ImageVector,
-    title: String,
-    description: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-    showDivider: Boolean = true
-) {
-    Column {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(AppSurfaceSubtle)
-                    .border(1.dp, AppBorderLight, RoundedCornerShape(10.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = title,
-                    tint = BrandTealBase,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.width(14.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = TextPrimaryDark
-                )
-                Text(
-                    text = description,
-                    fontSize = 11.sp,
-                    color = TextSecondarySlate,
-                    lineHeight = 15.sp
-                )
-            }
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            Switch(
-                checked = checked,
-                onCheckedChange = onCheckedChange,
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = ColorPureWhite,
-                    checkedTrackColor = BrandTealBase,
-                    uncheckedThumbColor = TextMutedSlate,
-                    uncheckedTrackColor = AppSurfaceSubtle,
-                    checkedBorderColor = BrandTealBase,
-                    uncheckedBorderColor = AppBorderLight
-                )
-            )
-        }
-
-        if (showDivider) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(1.dp)
-                    .background(AppBorderLight)
-            )
-        }
-    }
-}

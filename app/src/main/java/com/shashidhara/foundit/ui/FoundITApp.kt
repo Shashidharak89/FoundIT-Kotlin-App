@@ -13,6 +13,7 @@ import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -21,6 +22,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.shashidhara.foundit.data.repository.AuthState
 import com.shashidhara.foundit.ui.components.FoundITSidebar
@@ -38,8 +41,8 @@ import kotlinx.coroutines.launch
 
 /**
  * Root Composable for FoundIT.
- * Hosts the global Navbar, Sidebar (ModalNavigationDrawer), and page content.
- * Sidebar opens via the hamburger button, and closes on clicking 'X' or outside (scrim).
+ * Hosts the global Navbar, Sidebar (ModalNavigationDrawer sliding from right corner), and page content.
+ * Sidebar opens via the hamburger button in the right corner of navbar, and closes on clicking 'X' or outside (scrim).
  */
 @Composable
 fun FoundITApp(
@@ -72,42 +75,49 @@ fun FoundITApp(
         }
     }
 
-    ModalNavigationDrawer(
-        drawerState = drawerState,
-        // Closes automatically when user taps anywhere outside the sidebar (scrim tap)
-        gesturesEnabled = true,
-        scrimColor = ColorPureBlack.copy(alpha = 0.5f),
-        drawerContent = {
-            FoundITSidebar(
-                currentScreen = currentScreen,
-                userProfile = currentUserProfile,
-                onNavigate = { screen ->
-                    currentScreen = screen
-                    scope.launch {
-                        drawerState.close()
-                    }
-                },
-                onCloseClick = {
-                    scope.launch {
-                        drawerState.close()
-                    }
-                }
-            )
-        }
-    ) {
-        Scaffold(
-            topBar = {
-                FoundITTopBar(
-                    currentScreen = currentScreen,
-                    onMenuClick = {
-                        scope.launch {
-                            drawerState.open()
+    // Sidebar slides from the right corner by setting RTL on the drawer wrapper
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+        ModalNavigationDrawer(
+            drawerState = drawerState,
+            // Closes automatically when user taps anywhere outside the sidebar (scrim tap)
+            gesturesEnabled = true,
+            scrimColor = ColorPureBlack.copy(alpha = 0.5f),
+            drawerContent = {
+                // Restore LTR inside sidebar content
+                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                    FoundITSidebar(
+                        currentScreen = currentScreen,
+                        userProfile = currentUserProfile,
+                        onNavigate = { screen ->
+                            currentScreen = screen
+                            scope.launch {
+                                drawerState.close()
+                            }
+                        },
+                        onCloseClick = {
+                            scope.launch {
+                                drawerState.close()
+                            }
                         }
-                    }
-                )
-            },
-            containerColor = ColorPureWhite
-        ) { innerPadding ->
+                    )
+                }
+            }
+        ) {
+            // Restore LTR inside main screen content
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                Scaffold(
+                    topBar = {
+                        FoundITTopBar(
+                            currentScreen = currentScreen,
+                            onMenuClick = {
+                                scope.launch {
+                                    drawerState.open()
+                                }
+                            }
+                        )
+                    },
+                    containerColor = ColorPureWhite
+                ) { innerPadding ->
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -184,3 +194,6 @@ fun FoundITApp(
         }
     }
 }
+}
+}
+
