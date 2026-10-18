@@ -502,5 +502,36 @@ object FoundITIcons {
             }
         }.build()
     }
+
+    val Filter: ImageVector by lazy {
+        ImageVector.Builder(
+            name = "Filter",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f
+        ).apply {
+            path(fill = SolidColor(Color.White)) {
+                moveTo(10f, 18f)
+                horizontalLineTo(14f)
+                verticalLineTo(16f)
+                horizontalLineTo(10f)
+                verticalLineTo(18f)
+                close()
+                moveTo(3f, 6f)
+                verticalLineTo(8f)
+                horizontalLineTo(21f)
+                verticalLineTo(6f)
+                horizontalLineTo(3f)
+                close()
+                moveTo(6f, 13f)
+                horizontalLineTo(18f)
+                verticalLineTo(11f)
+                horizontalLineTo(6f)
+                verticalLineTo(13f)
+                close()
+            }
+        }.build()
+    }
 }
 

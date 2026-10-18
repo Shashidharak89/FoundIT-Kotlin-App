@@ -57,6 +57,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -107,15 +110,9 @@ fun HomeScreen(
 
     val listState = rememberLazyListState()
 
-    // Local debounced search query state
+    // Local search query input state (only executed when user taps search icon or keyboard search)
     var searchInput by remember(feedState.searchQuery) { mutableStateOf(feedState.searchQuery) }
-
-    LaunchedEffect(searchInput) {
-        if (searchInput != feedState.searchQuery) {
-            delay(350) // 350ms debounce
-            postViewModel.onSearchQueryChanged(searchInput)
-        }
-    }
+    var showFilterDialog by remember { mutableStateOf(false) }
 
     val categories = remember {
         listOf("All Items", "Electronics", "Wallets & Cards", "Keys", "Bags", "Documents", "Clothing", "Other")
@@ -291,7 +288,7 @@ fun HomeScreen(
                 }
             }
 
-            // Search Bar with Debounce and Clear Button
+            // Search Bar with Explicit Search Execution on Icon Click
             item {
                 Box(
                     modifier = Modifier
@@ -311,26 +308,62 @@ fun HomeScreen(
                         leadingIcon = {
                             Icon(
                                 imageVector = FoundITIcons.Search,
-                                contentDescription = "Search",
-                                tint = BrandTealBase,
+                                contentDescription = null,
+                                tint = TextMutedSlate,
                                 modifier = Modifier.size(20.dp)
                             )
                         },
                         trailingIcon = {
-                            if (searchInput.isNotBlank()) {
-                                Icon(
-                                    imageVector = FoundITIcons.Close,
-                                    contentDescription = "Clear Search",
-                                    tint = TextSecondarySlate,
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(end = 4.dp)
+                            ) {
+                                if (searchInput.isNotBlank()) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(28.dp)
+                                            .clip(CircleShape)
+                                            .background(AppSurfaceSubtle)
+                                            .clickable {
+                                                searchInput = ""
+                                                postViewModel.onSearchQueryChanged("")
+                                            },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = FoundITIcons.Close,
+                                            contentDescription = "Clear Search",
+                                            tint = TextSecondarySlate,
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                }
+
+                                // Search icon button: only when clicked sends search request to the server
+                                Box(
                                     modifier = Modifier
-                                        .size(18.dp)
+                                        .size(34.dp)
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(BrandTealBase)
                                         .clickable {
-                                            searchInput = ""
-                                            postViewModel.onSearchQueryChanged("")
-                                        }
-                                )
+                                            postViewModel.onSearchQueryChanged(searchInput.trim())
+                                        },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = FoundITIcons.Search,
+                                        contentDescription = "Submit Search",
+                                        tint = ColorPureWhite,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
                             }
                         },
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                        keyboardActions = KeyboardActions(onSearch = {
+                            postViewModel.onSearchQueryChanged(searchInput.trim())
+                        }),
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(14.dp))
@@ -348,89 +381,78 @@ fun HomeScreen(
                 }
             }
 
-            // Post Type Filter Chips: ALL / LOST / FOUND
+            // Post Type Filter Chips with Filter Icon in the right corner
             item {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    listOf("ALL" to "All Items", "LOST" to "Lost Items", "FOUND" to "Found Items").forEach { (typeKey, label) ->
-                        val isSelected = feedState.selectedType == typeKey
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(14.dp))
-                                .background(if (isSelected) BrandTealBase else ColorPureWhite)
-                                .border(1.dp, if (isSelected) BrandTealBase else AppBorderLight, RoundedCornerShape(14.dp))
-                                .clickable { postViewModel.onTypeFilterChanged(typeKey) }
-                                .padding(horizontal = 12.dp, vertical = 6.dp)
-                        ) {
-                            Text(
-                                text = label,
-                                fontSize = 11.sp,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                color = if (isSelected) BrandMintBase else TextSecondarySlate
-                            )
-                        }
-                    }
-                }
-            }
+                val hasActiveFilters = feedState.selectedCategory != "All Items" || feedState.selectedStatus != "ALL"
 
-            // Category Chips (Horizontal Scrollable)
-            item {
-                val scrollState = rememberScrollState()
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .horizontalScroll(scrollState)
                         .padding(horizontal = 16.dp, vertical = 6.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    categories.forEach { category ->
-                        val isSelected = feedState.selectedCategory == category
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(14.dp))
-                                .background(if (isSelected) BrandTealBase else AppSurfaceSubtle)
-                                .border(1.dp, if (isSelected) BrandTealBase else AppBorderLight, RoundedCornerShape(14.dp))
-                                .clickable { postViewModel.onCategorySelected(category) }
-                                .padding(horizontal = 12.dp, vertical = 6.dp)
-                        ) {
-                            Text(
-                                text = category,
-                                fontSize = 11.sp,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                color = if (isSelected) BrandMintBase else TextPrimaryDark
-                            )
+                    // Type Filters: ALL / LOST / FOUND
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        listOf("ALL" to "All Items", "LOST" to "Lost Items", "FOUND" to "Found Items").forEach { (typeKey, label) ->
+                            val isSelected = feedState.selectedType == typeKey
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .background(if (isSelected) BrandTealBase else ColorPureWhite)
+                                    .border(
+                                        1.dp,
+                                        if (isSelected) BrandTealBase else AppBorderLight,
+                                        RoundedCornerShape(14.dp)
+                                    )
+                                    .clickable { postViewModel.onTypeFilterChanged(typeKey) }
+                                    .padding(horizontal = 12.dp, vertical = 7.dp)
+                            ) {
+                                Text(
+                                    text = label,
+                                    fontSize = 11.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (isSelected) BrandMintBase else TextSecondarySlate
+                                )
+                            }
                         }
                     }
-                }
-            }
 
-            // Status Filter Chips: ALL / OPEN / RESOLVED
-            item {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    listOf("ALL" to "All Statuses", "OPEN" to "Active / Open", "RESOLVED" to "Resolved").forEach { (statusKey, label) ->
-                        val isSelected = feedState.selectedStatus == statusKey
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(14.dp))
-                                .background(if (isSelected) BrandTealBase else ColorPureWhite)
-                                .border(1.dp, if (isSelected) BrandTealBase else AppBorderLight, RoundedCornerShape(14.dp))
-                                .clickable { postViewModel.onStatusFilterChanged(statusKey) }
-                                .padding(horizontal = 12.dp, vertical = 6.dp)
-                        ) {
-                            Text(
-                                text = label,
-                                fontSize = 11.sp,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                color = if (isSelected) BrandMintBase else TextSecondarySlate
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    // Filter icon button in the right corner
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(if (hasActiveFilters) BrandMintBg else ColorPureWhite)
+                            .border(
+                                1.dp,
+                                if (hasActiveFilters) BrandTealBase else AppBorderLight,
+                                RoundedCornerShape(12.dp)
+                            )
+                            .clickable { showFilterDialog = true },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = FoundITIcons.Filter,
+                            contentDescription = "Filter Category & Status",
+                            tint = if (hasActiveFilters) BrandTealBase else TextSecondarySlate,
+                            modifier = Modifier.size(18.dp)
+                        )
+
+                        if (hasActiveFilters) {
+                            // Indicator dot showing filters are active
+                            Box(
+                                modifier = Modifier
+                                    .size(6.dp)
+                                    .align(Alignment.TopEnd)
+                                    .padding(1.dp)
+                                    .clip(CircleShape)
+                                    .background(BrandTealBase)
                             )
                         }
                     }
@@ -833,7 +855,215 @@ fun HomeScreen(
                 }
             )
         }
+
+        // Category and Status Filter Dialog (Opened via right-corner filter icon)
+        if (showFilterDialog) {
+            FeedFilterDialog(
+                selectedCategory = feedState.selectedCategory,
+                selectedStatus = feedState.selectedStatus,
+                onCategorySelected = { category ->
+                    postViewModel.onCategorySelected(category)
+                },
+                onStatusSelected = { status ->
+                    postViewModel.onStatusFilterChanged(status)
+                },
+                onResetFilters = {
+                    postViewModel.onCategorySelected("All Items")
+                    postViewModel.onStatusFilterChanged("ALL")
+                },
+                onDismiss = { showFilterDialog = false }
+            )
+        }
     }
+}
+
+/**
+ * Filter Dialog to select Item Category and Status.
+ * Opened on clicking the filter icon at the end of the post type filter row.
+ */
+@Composable
+private fun FeedFilterDialog(
+    selectedCategory: String,
+    selectedStatus: String,
+    onCategorySelected: (String) -> Unit,
+    onStatusSelected: (String) -> Unit,
+    onResetFilters: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val categories = listOf("All Items", "Electronics", "Wallets & Cards", "Keys", "Bags", "Documents", "Clothing", "Other")
+    val statuses = listOf("ALL" to "All Statuses", "OPEN" to "Active / Open", "RESOLVED" to "Resolved")
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(BrandMintBg)
+                            .border(1.dp, BrandMintBase, RoundedCornerShape(8.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = FoundITIcons.Filter,
+                            contentDescription = null,
+                            tint = BrandTealBase,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = "Filter Posts",
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimaryDark
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .background(AppSurfaceSubtle)
+                        .clickable { onDismiss() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = FoundITIcons.Close,
+                        contentDescription = "Close",
+                        tint = TextSecondarySlate,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+            ) {
+                // Section: Category
+                Text(
+                    text = "ITEM CATEGORY",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = BrandTealBase,
+                    letterSpacing = 1.sp
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    categories.chunked(2).forEach { rowCategories ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            rowCategories.forEach { category ->
+                                val isSelected = selectedCategory == category
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(if (isSelected) BrandTealBase else AppSurfaceSubtle)
+                                        .border(
+                                            1.dp,
+                                            if (isSelected) BrandTealBase else AppBorderLight,
+                                            RoundedCornerShape(12.dp)
+                                        )
+                                        .clickable { onCategorySelected(category) }
+                                        .padding(horizontal = 8.dp, vertical = 9.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = category,
+                                        fontSize = 12.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        color = if (isSelected) BrandMintBase else TextPrimaryDark,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            }
+                            if (rowCategories.size == 1) {
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Section: Status
+                Text(
+                    text = "POST STATUS",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = BrandTealBase,
+                    letterSpacing = 1.sp
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    statuses.forEach { (statusKey, label) ->
+                        val isSelected = selectedStatus == statusKey
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(if (isSelected) BrandTealBase else AppSurfaceSubtle)
+                                .border(
+                                    1.dp,
+                                    if (isSelected) BrandTealBase else AppBorderLight,
+                                    RoundedCornerShape(12.dp)
+                                )
+                                .clickable { onStatusSelected(statusKey) }
+                                .padding(vertical = 10.dp, horizontal = 4.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = label,
+                                fontSize = 11.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                color = if (isSelected) BrandMintBase else TextPrimaryDark,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onDismiss,
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = BrandTealBase,
+                    contentColor = ColorPureWhite
+                )
+            ) {
+                Text("Apply Filters", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = {
+                onResetFilters()
+            }) {
+                Text("Reset All", color = TextSecondarySlate, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+            }
+        },
+        containerColor = ColorPureWhite,
+        shape = RoundedCornerShape(20.dp)
+    )
 }
 
 /**
