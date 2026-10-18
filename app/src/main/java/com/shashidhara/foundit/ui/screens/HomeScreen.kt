@@ -50,13 +50,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.ImeAction
@@ -163,132 +167,215 @@ fun HomeScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp)
-                        .clip(RoundedCornerShape(22.dp))
-                        .background(BrandMintBg)
-                        .border(1.dp, BrandMintBase, RoundedCornerShape(22.dp))
+                        .clip(RoundedCornerShape(26.dp))
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    Color(0xFFE6FAF5),
+                                    Color(0xFFF0FDF9),
+                                    ColorPureWhite
+                                )
+                            )
+                        )
+                        .border(1.dp, Color(0xFFD1FAE5), RoundedCornerShape(26.dp))
                         .padding(20.dp)
                 ) {
                     Column {
-                        // Landing Header: Status Badge + In-App Logo
+                        // Status Badge: Logged in • Network Active
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(20.dp))
+                                .background(ColorPureWhite.copy(alpha = 0.9f))
+                                .border(1.dp, Color(0xFFCCFBF1), RoundedCornerShape(20.dp))
+                                .padding(horizontal = 12.dp, vertical = 5.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(
+                            Box(
                                 modifier = Modifier
-                                    .clip(RoundedCornerShape(20.dp))
-                                    .background(ColorPureWhite)
-                                    .border(1.dp, BrandMintBase, RoundedCornerShape(20.dp))
-                                    .padding(horizontal = 10.dp, vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(6.dp)
-                                        .clip(CircleShape)
-                                        .background(BrandTealBase)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = if (currentUser != null) "LOGGED IN • NETWORK ACTIVE" else "PUBLIC COMMUNITY FEED",
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = BrandTealBase,
-                                    letterSpacing = 1.sp
-                                )
-                            }
-
-                            Image(
-                                painter = painterResource(id = R.drawable.foundit_logo),
-                                contentDescription = "FoundIT Logo",
-                                contentScale = ContentScale.Fit,
-                                modifier = Modifier
-                                    .size(44.dp)
-                                    .clip(RoundedCornerShape(10.dp))
+                                    .size(7.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFF10B981))
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = if (currentUser != null) "Logged in" else "Public Access",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = BrandTealBase
+                            )
+                            Text(
+                                text = " • ",
+                                fontSize = 11.sp,
+                                color = TextSecondarySlate
+                            )
+                            Icon(
+                                imageVector = FoundITIcons.Network,
+                                contentDescription = null,
+                                tint = Color(0xFF0D9488),
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Network Active",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = BrandTealBase
                             )
                         }
 
                         Spacer(modifier = Modifier.height(14.dp))
 
-                        Text(
-                            text = "Find What You Lost.\nReturn What You Found.",
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = BrandTealBase,
-                            lineHeight = 28.sp
-                        )
+                        // Headline + Subtitle + 3D Backpack Illustration
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                val headlineText = buildAnnotatedString {
+                                    append("Find What You ")
+                                    withStyle(SpanStyle(color = Color(0xFF0D9488))) {
+                                        append("Lost.")
+                                    }
+                                    append("\nReturn What You ")
+                                    withStyle(SpanStyle(color = Color(0xFF0D9488))) {
+                                        append("Found.")
+                                    }
+                                }
+                                Text(
+                                    text = headlineText,
+                                    fontSize = 21.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = TextPrimaryDark,
+                                    lineHeight = 27.sp
+                                )
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                                Spacer(modifier = Modifier.height(8.dp))
 
-                        Text(
-                            text = "A secure community lost-and-found network. Real-time items posted directly by people around you.",
-                            fontSize = 13.sp,
-                            color = TextSecondarySlate,
-                            lineHeight = 18.sp
-                        )
+                                Text(
+                                    text = "A secure community lost-and-found network.\nReal-time items posted around you.",
+                                    fontSize = 12.sp,
+                                    color = TextSecondarySlate,
+                                    lineHeight = 17.sp
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.width(8.dp))
+
+                            Image(
+                                painter = painterResource(id = R.drawable.backpack_hero),
+                                contentDescription = "FoundIT Backpack Illustration",
+                                contentScale = ContentScale.Fit,
+                                modifier = Modifier
+                                    .size(105.dp)
+                                    .clip(RoundedCornerShape(18.dp))
+                            )
+                        }
 
                         Spacer(modifier = Modifier.height(18.dp))
 
-                        // Action Buttons: I Lost Something / I Found Something
+                        // Action Buttons: "I Lost Something >" / "I Found Something >"
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            Button(
-                                onClick = {
-                                    if (currentUser == null) {
-                                        onSignInClick?.invoke() ?: onNavigateToAccount()
-                                    } else {
-                                        onNavigateToCreatePost("LOST")
-                                    }
-                                },
+                            // "I Lost Something >" Pill
+                            Box(
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(44.dp),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = BrandTealBase,
-                                    contentColor = ColorPureWhite
-                                )
+                                    .height(44.dp)
+                                    .clip(RoundedCornerShape(50.dp))
+                                    .background(BrandTealBase)
+                                    .clickable {
+                                        if (currentUser == null) {
+                                            onSignInClick?.invoke() ?: onNavigateToAccount()
+                                        } else {
+                                            onNavigateToCreatePost("LOST")
+                                        }
+                                    }
+                                    .padding(horizontal = 14.dp),
+                                contentAlignment = Alignment.Center
                             ) {
-                                Text(
-                                    text = "I Lost Something",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 13.sp
-                                )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    Icon(
+                                        imageVector = FoundITIcons.Send,
+                                        contentDescription = null,
+                                        tint = Color(0xFF5EEAD4),
+                                        modifier = Modifier.size(15.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "I Lost Something",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp,
+                                        color = ColorPureWhite,
+                                        maxLines = 1
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Icon(
+                                        imageVector = FoundITIcons.ChevronRight,
+                                        contentDescription = null,
+                                        tint = ColorPureWhite.copy(alpha = 0.7f),
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                }
                             }
 
-                            Button(
-                                onClick = {
-                                    if (currentUser == null) {
-                                        onSignInClick?.invoke() ?: onNavigateToAccount()
-                                    } else {
-                                        onNavigateToCreatePost("FOUND")
-                                    }
-                                },
+                            // "I Found Something >" Pill
+                            Box(
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(44.dp),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = ColorPureWhite,
-                                    contentColor = BrandTealBase
-                                ),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, BrandMintBase)
+                                    .height(44.dp)
+                                    .clip(RoundedCornerShape(50.dp))
+                                    .background(ColorPureWhite)
+                                    .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(50.dp))
+                                    .clickable {
+                                        if (currentUser == null) {
+                                            onSignInClick?.invoke() ?: onNavigateToAccount()
+                                        } else {
+                                            onNavigateToCreatePost("FOUND")
+                                        }
+                                    }
+                                    .padding(horizontal = 14.dp),
+                                contentAlignment = Alignment.Center
                             ) {
-                                Text(
-                                    text = "I Found Something",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 13.sp
-                                )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    Icon(
+                                        imageVector = FoundITIcons.Package,
+                                        contentDescription = null,
+                                        tint = Color(0xFF0D9488),
+                                        modifier = Modifier.size(15.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "I Found Something",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp,
+                                        color = BrandTealBase,
+                                        maxLines = 1
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Icon(
+                                        imageVector = FoundITIcons.ChevronRight,
+                                        contentDescription = null,
+                                        tint = BrandTealBase.copy(alpha = 0.7f),
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
 
-            // Search Bar with Explicit Search Execution on Icon Click
+            // Search Bar with Circular Dark Teal Button
             item {
                 Box(
                     modifier = Modifier
@@ -316,7 +403,7 @@ fun HomeScreen(
                         trailingIcon = {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(end = 4.dp)
+                                modifier = Modifier.padding(end = 6.dp)
                             ) {
                                 if (searchInput.isNotBlank()) {
                                     Box(
@@ -340,11 +427,11 @@ fun HomeScreen(
                                     Spacer(modifier = Modifier.width(6.dp))
                                 }
 
-                                // Search icon button: only when clicked sends search request to the server
+                                // Dark teal circular search submit button
                                 Box(
                                     modifier = Modifier
-                                        .size(34.dp)
-                                        .clip(RoundedCornerShape(10.dp))
+                                        .size(38.dp)
+                                        .clip(CircleShape)
                                         .background(BrandTealBase)
                                         .clickable {
                                             postViewModel.onSearchQueryChanged(searchInput.trim())
@@ -366,7 +453,7 @@ fun HomeScreen(
                         }),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(14.dp))
+                            .clip(RoundedCornerShape(28.dp))
                             .background(ColorPureWhite),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = BrandTealBase,
@@ -375,7 +462,7 @@ fun HomeScreen(
                             unfocusedTextColor = TextPrimaryDark,
                             cursorColor = BrandTealBase
                         ),
-                        shape = RoundedCornerShape(14.dp),
+                        shape = RoundedCornerShape(28.dp),
                         singleLine = true
                     )
                 }
@@ -392,31 +479,51 @@ fun HomeScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Type Filters: ALL / LOST / FOUND
+                    // Type Filters: ALL / LOST / FOUND with icons matching mockup
                     Row(
                         modifier = Modifier.weight(1f),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        listOf("ALL" to "All Items", "LOST" to "Lost Items", "FOUND" to "Found Items").forEach { (typeKey, label) ->
+                        listOf(
+                            Triple("ALL", "All Items", FoundITIcons.Grid),
+                            Triple("LOST", "Lost Items", FoundITIcons.Document),
+                            Triple("FOUND", "Found Items", FoundITIcons.Package)
+                        ).forEach { (typeKey, label, icon) ->
                             val isSelected = feedState.selectedType == typeKey
+                            val iconTint = when {
+                                isSelected -> if (typeKey == "ALL") Color(0xFF5EEAD4) else if (typeKey == "LOST") Color(0xFFFCA5A5) else Color(0xFF6EE7B7)
+                                typeKey == "LOST" -> Color(0xFFEF4444)
+                                typeKey == "FOUND" -> Color(0xFF10B981)
+                                else -> TextSecondarySlate
+                            }
+
                             Box(
                                 modifier = Modifier
-                                    .clip(RoundedCornerShape(14.dp))
+                                    .clip(RoundedCornerShape(50.dp))
                                     .background(if (isSelected) BrandTealBase else ColorPureWhite)
                                     .border(
                                         1.dp,
                                         if (isSelected) BrandTealBase else AppBorderLight,
-                                        RoundedCornerShape(14.dp)
+                                        RoundedCornerShape(50.dp)
                                     )
                                     .clickable { postViewModel.onTypeFilterChanged(typeKey) }
-                                    .padding(horizontal = 12.dp, vertical = 7.dp)
+                                    .padding(horizontal = 14.dp, vertical = 8.dp)
                             ) {
-                                Text(
-                                    text = label,
-                                    fontSize = 11.sp,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                    color = if (isSelected) BrandMintBase else TextSecondarySlate
-                                )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = icon,
+                                        contentDescription = null,
+                                        tint = iconTint,
+                                        modifier = Modifier.size(15.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = label,
+                                        fontSize = 12.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        color = if (isSelected) ColorPureWhite else TextSecondarySlate
+                                    )
+                                }
                             }
                         }
                     }
@@ -426,13 +533,13 @@ fun HomeScreen(
                     // Filter icon button in the right corner
                     Box(
                         modifier = Modifier
-                            .size(36.dp)
-                            .clip(RoundedCornerShape(12.dp))
+                            .size(38.dp)
+                            .clip(CircleShape)
                             .background(if (hasActiveFilters) BrandMintBg else ColorPureWhite)
                             .border(
                                 1.dp,
                                 if (hasActiveFilters) BrandTealBase else AppBorderLight,
-                                RoundedCornerShape(12.dp)
+                                CircleShape
                             )
                             .clickable { showFilterDialog = true },
                         contentAlignment = Alignment.Center
@@ -445,42 +552,49 @@ fun HomeScreen(
                         )
 
                         if (hasActiveFilters) {
-                            // Indicator dot showing filters are active
                             Box(
                                 modifier = Modifier
-                                    .size(6.dp)
+                                    .size(7.dp)
                                     .align(Alignment.TopEnd)
                                     .padding(1.dp)
                                     .clip(CircleShape)
-                                    .background(BrandTealBase)
+                                    .background(Color(0xFFEF4444))
                             )
                         }
                     }
                 }
             }
 
-            // Section Header: Recent Posts
+            // Section Header: Recent Community Posts
             item {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "RECENT COMMUNITY POSTS",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = TextMutedSlate,
-                        letterSpacing = 1.2.sp
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = FoundITIcons.Flame,
+                            contentDescription = null,
+                            tint = Color(0xFFFF6D00),
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Recent Community Posts",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimaryDark
+                        )
+                    }
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         if (feedState.posts.isNotEmpty()) {
                             Text(
                                 text = "${feedState.posts.size} items",
-                                fontSize = 11.sp,
+                                fontSize = 12.sp,
                                 color = TextMutedSlate,
                                 fontWeight = FontWeight.Medium
                             )
@@ -492,7 +606,7 @@ fun HomeScreen(
                             contentDescription = "Refresh Feed",
                             tint = BrandTealBase,
                             modifier = Modifier
-                                .size(16.dp)
+                                .size(18.dp)
                                 .clickable { postViewModel.refreshFeed() }
                         )
                     }
@@ -1094,23 +1208,22 @@ private fun RecentPostCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 6.dp)
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(20.dp))
             .background(ColorPureWhite)
-            .border(1.dp, AppBorderLight, RoundedCornerShape(16.dp))
+            .border(1.dp, Color(0xFFF1F5F9), RoundedCornerShape(20.dp))
             .clickable { onClick() }
-            .padding(14.dp)
+            .padding(12.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Media Thumbnail Container (with video play badge if video)
+            // Media Thumbnail Container (with heart icon & bottom-left dot)
             Box(
                 modifier = Modifier
-                    .size(68.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(AppSurfaceSubtle)
-                    .border(1.dp, AppBorderLight, RoundedCornerShape(12.dp)),
+                    .size(92.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(AppSurfaceSubtle),
                 contentAlignment = Alignment.Center
             ) {
                 if (mediaUrl.isNotBlank()) {
@@ -1137,24 +1250,6 @@ private fun RecentPostCard(
                             )
                         }
                     )
-
-                    // Video Play Badge Overlay
-                    if (post.isVideo) {
-                        Box(
-                            modifier = Modifier
-                                .size(26.dp)
-                                .clip(CircleShape)
-                                .background(BrandTealBase.copy(alpha = 0.85f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = FoundITIcons.Play,
-                                contentDescription = "Play Video",
-                                tint = BrandMintBase,
-                                modifier = Modifier.size(13.dp)
-                            )
-                        }
-                    }
                 } else {
                     Icon(
                         imageVector = if (post.isVideo) FoundITIcons.Video else FoundITIcons.MediaImage,
@@ -1163,12 +1258,58 @@ private fun RecentPostCard(
                         modifier = Modifier.size(24.dp)
                     )
                 }
+
+                // Video Play Badge Overlay if it's video
+                if (post.isVideo) {
+                    Box(
+                        modifier = Modifier
+                            .size(26.dp)
+                            .clip(CircleShape)
+                            .background(BrandTealBase.copy(alpha = 0.85f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = FoundITIcons.Play,
+                            contentDescription = "Play Video",
+                            tint = BrandMintBase,
+                            modifier = Modifier.size(13.dp)
+                        )
+                    }
+                }
+
+                // Heart / Favorite Icon button at Top-End
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(6.dp)
+                        .size(24.dp)
+                        .clip(CircleShape)
+                        .background(ColorPureWhite.copy(alpha = 0.9f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = FoundITIcons.Heart,
+                        contentDescription = "Favorite",
+                        tint = TextSecondarySlate,
+                        modifier = Modifier.size(13.dp)
+                    )
+                }
+
+                // Small white indicator dot at Bottom-Start
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(6.dp)
+                        .size(6.dp)
+                        .clip(CircleShape)
+                        .background(ColorPureWhite)
+                )
             }
 
             Spacer(modifier = Modifier.width(14.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                // Title and Lost/Found Badge
+                // Title and LOST / FOUND pill
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -1176,7 +1317,7 @@ private fun RecentPostCard(
                 ) {
                     Text(
                         text = post.title,
-                        fontSize = 14.sp,
+                        fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
                         color = TextPrimaryDark,
                         modifier = Modifier.weight(1f),
@@ -1186,83 +1327,105 @@ private fun RecentPostCard(
 
                     Spacer(modifier = Modifier.width(6.dp))
 
-                    // Type Badge (FOUND in soft mint pill, LOST in clean neutral pill)
+                    // Pill: LOST (soft red) or FOUND (soft teal)
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(if (isFound) BrandMintBg else AppSurfaceSubtle)
-                            .border(
-                                1.dp,
-                                if (isFound) BrandMintBase else AppBorderLight,
-                                RoundedCornerShape(8.dp)
-                            )
-                            .padding(horizontal = 8.dp, vertical = 3.dp)
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(if (isFound) Color(0xFFCCFBF1) else Color(0xFFFFE4E6))
+                            .padding(horizontal = 10.dp, vertical = 3.dp)
                     ) {
                         Text(
                             text = if (isFound) "FOUND" else "LOST",
                             fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = if (isFound) BrandTealBase else TextPrimaryDark
+                            fontWeight = FontWeight.ExtraBold,
+                            color = if (isFound) Color(0xFF0D9488) else Color(0xFFE11D48)
                         )
                     }
                 }
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                // Location and Date
+                // Location row
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.weight(1f, fill = false)
-                    ) {
-                        Icon(
-                            imageVector = FoundITIcons.Location,
-                            contentDescription = "Location",
-                            tint = BrandTealBase,
-                            modifier = Modifier.size(13.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = post.location.ifBlank { "Location unspecified" },
-                            fontSize = 11.sp,
-                            color = TextSecondarySlate,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-
+                    Icon(
+                        imageVector = FoundITIcons.Location,
+                        contentDescription = "Location",
+                        tint = TextSecondarySlate,
+                        modifier = Modifier.size(13.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = formattedDate,
-                        fontSize = 10.sp,
-                        color = TextMutedSlate
+                        text = post.location.ifBlank { "Location unspecified" },
+                        fontSize = 12.sp,
+                        color = TextSecondarySlate,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
 
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(2.dp))
 
-                // Bottom Row: Category + Contextual Action Label
+                // Calendar date row
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(
+                        imageVector = FoundITIcons.Calendar,
+                        contentDescription = "Date",
+                        tint = TextSecondarySlate,
+                        modifier = Modifier.size(13.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = formattedDate,
+                        fontSize = 12.sp,
+                        color = TextSecondarySlate
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Bottom Row: Category Pill + Contextual Action Button
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = post.category,
-                        fontSize = 11.sp,
-                        color = TextMutedSlate
-                    )
+                    // Category pill with Monitor icon and light blue background
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color(0xFFE0F2FE))
+                            .padding(horizontal = 8.dp, vertical = 3.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = FoundITIcons.Monitor,
+                                contentDescription = null,
+                                tint = Color(0xFF0284C7),
+                                modifier = Modifier.size(13.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = post.category,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color(0xFF0284C7)
+                            )
+                        }
+                    }
 
-                    // Contextual Action/Status Label
+                    // Contextual Action Button matching reference mockup
                     if (isTerminalStatus) {
                         Box(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(6.dp))
+                                .clip(RoundedCornerShape(20.dp))
                                 .background(Color(0xFFF1F5F9))
-                                .padding(horizontal = 8.dp, vertical = 2.dp)
+                                .padding(horizontal = 10.dp, vertical = 4.dp)
                         ) {
                             Text(
                                 text = post.status.uppercase(),
@@ -1274,29 +1437,38 @@ private fun RecentPostCard(
                     } else if (isOwner) {
                         Box(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(BrandMintBg)
-                                .border(1.dp, BrandMintBase, RoundedCornerShape(6.dp))
-                                .padding(horizontal = 8.dp, vertical = 2.dp)
+                                .clip(RoundedCornerShape(20.dp))
+                                .background(Color(0xFFCCFBF1))
+                                .border(1.dp, Color(0xFF99F6E4), RoundedCornerShape(20.dp))
+                                .padding(horizontal = 10.dp, vertical = 4.dp)
                         ) {
-                            Text(
-                                text = "Your Post",
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = BrandTealBase
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = FoundITIcons.Account,
+                                    contentDescription = null,
+                                    tint = Color(0xFF0D9488),
+                                    modifier = Modifier.size(12.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "Your Post",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF0D9488)
+                                )
+                            }
                         }
                     } else if (currentUser == null) {
                         Box(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(6.dp))
+                                .clip(RoundedCornerShape(20.dp))
                                 .background(AppSurfaceSubtle)
-                                .border(1.dp, AppBorderLight, RoundedCornerShape(6.dp))
-                                .padding(horizontal = 8.dp, vertical = 2.dp)
+                                .border(1.dp, AppBorderLight, RoundedCornerShape(20.dp))
+                                .padding(horizontal = 10.dp, vertical = 4.dp)
                         ) {
                             Text(
                                 text = "View Details",
-                                fontSize = 10.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 color = BrandTealBase
                             )
@@ -1304,17 +1476,26 @@ private fun RecentPostCard(
                     } else {
                         Box(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(BrandMintBg)
-                                .border(1.dp, BrandMintBase, RoundedCornerShape(6.dp))
-                                .padding(horizontal = 8.dp, vertical = 2.dp)
+                                .clip(RoundedCornerShape(20.dp))
+                                .background(Color(0xFFCCFBF1))
+                                .border(1.dp, Color(0xFF99F6E4), RoundedCornerShape(20.dp))
+                                .padding(horizontal = 10.dp, vertical = 4.dp)
                         ) {
-                            Text(
-                                text = if (isFound) "Claim" else "Respond",
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = BrandTealBase
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = FoundITIcons.Chat,
+                                    contentDescription = null,
+                                    tint = Color(0xFF0D9488),
+                                    modifier = Modifier.size(12.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = if (isFound) "Claim" else "Respond",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF0D9488)
+                                )
+                            }
                         }
                     }
                 }

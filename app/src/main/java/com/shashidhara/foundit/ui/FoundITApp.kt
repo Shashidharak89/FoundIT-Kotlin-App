@@ -40,10 +40,28 @@ import com.shashidhara.foundit.ui.viewmodel.AuthViewModel
 import com.shashidhara.foundit.ui.viewmodel.PostViewModel
 import kotlinx.coroutines.launch
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.shashidhara.foundit.ui.components.BottomBarTab
+import com.shashidhara.foundit.ui.components.FoundITBottomBar
+import com.shashidhara.foundit.ui.components.FoundITIcons
+import com.shashidhara.foundit.ui.theme.BrandTealBase
+
 /**
  * Root Composable for FoundIT.
  * Hosts the global Navbar, Sidebar (ModalNavigationDrawer sliding from right corner), and page content.
- * Sidebar opens via the hamburger button in the right corner of navbar, and closes on clicking 'X' or outside (scrim).
+ * Sidebar opens via clicking the profile avatar in navbar, and closes on clicking 'X' or outside (scrim).
  */
 @Composable
 fun FoundITApp(
@@ -120,12 +138,64 @@ fun FoundITApp(
                     topBar = {
                         FoundITTopBar(
                             currentScreen = currentScreen,
+                            userProfile = currentUserProfile,
                             onMenuClick = {
                                 scope.launch {
                                     drawerState.open()
                                 }
                             }
                         )
+                    },
+                    bottomBar = {
+                        FoundITBottomBar(
+                            currentScreen = currentScreen,
+                            onTabSelected = { tab ->
+                                when (tab) {
+                                    BottomBarTab.HOME -> currentScreen = Screen.Home
+                                    BottomBarTab.MY_POSTS -> currentScreen = Screen.MyPosts
+                                    BottomBarTab.REQUESTS -> currentScreen = Screen.MyPosts
+                                    BottomBarTab.PROFILE -> currentScreen = Screen.MyAccount
+                                }
+                            }
+                        )
+                    },
+                    floatingActionButton = {
+                        if (currentScreen is Screen.Home) {
+                            androidx.compose.material3.Surface(
+                                shape = RoundedCornerShape(50.dp),
+                                shadowElevation = 6.dp,
+                                color = BrandTealBase,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(50.dp))
+                                    .clickable {
+                                        if (currentUserProfile == null) {
+                                            currentScreen = Screen.MyAccount
+                                        } else {
+                                            initialCreatePostType = "LOST"
+                                            currentScreen = Screen.CreatePost
+                                        }
+                                    }
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = FoundITIcons.Add,
+                                        contentDescription = "Report Item",
+                                        tint = ColorPureWhite,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "Report Item",
+                                        color = ColorPureWhite,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.sp
+                                    )
+                                }
+                            }
+                        }
                     },
                     containerColor = ColorPureWhite
                 ) { innerPadding ->
