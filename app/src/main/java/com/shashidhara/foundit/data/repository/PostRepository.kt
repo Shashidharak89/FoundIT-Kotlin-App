@@ -323,8 +323,8 @@ class PostRepository(
             .whereEqualTo("ownerUid", ownerUid)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
-                    Log.e(TAG, "Error listening to user posts: ${error.message}", error)
-                    close(error)
+                    Log.w(TAG, "Error listening to user posts: ${error.message}")
+                    close()
                     return@addSnapshotListener
                 }
 

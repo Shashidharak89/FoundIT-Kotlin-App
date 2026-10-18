@@ -36,7 +36,11 @@ class AuthViewModel(
 
     fun signOut(context: Context) {
         viewModelScope.launch {
-            repository.signOut(context)
+            try {
+                repository.signOut(context)
+            } catch (e: Exception) {
+                android.util.Log.e("FoundIT_AuthVM", "Sign out error caught safely: ${e.message}", e)
+            }
         }
     }
 

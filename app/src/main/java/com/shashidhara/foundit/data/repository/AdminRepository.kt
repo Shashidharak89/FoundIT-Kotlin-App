@@ -420,8 +420,8 @@ class AdminRepository(
             .whereEqualTo("postId", postId)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
-                    Log.e(TAG, "Error listening to handover timeline: ${error.message}", error)
-                    close(error)
+                    Log.w(TAG, "Error listening to handover timeline: ${error.message}")
+                    close()
                     return@addSnapshotListener
                 }
 

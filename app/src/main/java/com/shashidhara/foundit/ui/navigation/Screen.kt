@@ -50,7 +50,7 @@ sealed class Screen(
 
         fun getSidebarItemsForRole(role: String?): List<Screen> {
             return if (role.equals("ADMIN", ignoreCase = true)) {
-                listOf(Home, CreatePost, MyPosts, MyAccount, AdminPanel)
+                listOf(Home, CreatePost, MyPosts, AdminPanel, MyAccount)
             } else {
                 listOf(Home, CreatePost, MyPosts, MyAccount)
             }

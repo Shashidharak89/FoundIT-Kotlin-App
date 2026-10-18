@@ -12,9 +12,11 @@ import com.shashidhara.foundit.data.repository.PostRepository
 import com.shashidhara.foundit.data.repository.RequestRepository
 import android.content.Context
 import android.net.Uri
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
@@ -72,7 +74,12 @@ class DashboardViewModel(
         }
     }
 
+    private var receivedRequestsJob: Job? = null
+    private var sentRequestsJob: Job? = null
+
     fun onUserChanged(uid: String?) {
+        receivedRequestsJob?.cancel()
+        sentRequestsJob?.cancel()
         if (!uid.isNullOrBlank()) {
             loadInitialMyPosts(uid)
             observeRequests(uid)
@@ -320,13 +327,15 @@ class DashboardViewModel(
     // --- Request Management for Post Owners ---
 
     private fun observeRequests(uid: String) {
-        requestRepository.getReceivedRequestsFlow(uid)
+        receivedRequestsJob = requestRepository.getReceivedRequestsFlow(uid)
+            .catch { e -> Log.w(TAG, "Stream error on received requests: ${e.message}") }
             .onEach { requests ->
                 _uiState.update { it.copy(receivedRequests = requests) }
             }
             .launchIn(viewModelScope)
 
-        requestRepository.getSentRequestsFlow(uid)
+        sentRequestsJob = requestRepository.getSentRequestsFlow(uid)
+            .catch { e -> Log.w(TAG, "Stream error on sent requests: ${e.message}") }
             .onEach { requests ->
                 _uiState.update { it.copy(sentRequests = requests) }
             }

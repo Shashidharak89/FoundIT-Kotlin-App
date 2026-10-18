@@ -218,7 +218,11 @@ class AuthRepository(
     }
 
     suspend fun signOut(context: Context) {
-        auth.signOut()
+        try {
+            auth.signOut()
+        } catch (e: Exception) {
+            Log.w(TAG, "Error signing out of FirebaseAuth: ${e.message}", e)
+        }
         try {
             val activityContext = context.findActivity() ?: context
             val credentialManager = CredentialManager.create(activityContext)

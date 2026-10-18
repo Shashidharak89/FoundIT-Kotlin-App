@@ -61,7 +61,8 @@ fun FoundITSidebar(
     onNavigate: (Screen) -> Unit,
     onCloseClick: () -> Unit,
     modifier: Modifier = Modifier,
-    userProfile: UserProfile? = null
+    userProfile: UserProfile? = null,
+    onSignOut: () -> Unit = {}
 ) {
     val scrollState = rememberScrollState()
 
@@ -79,7 +80,7 @@ fun FoundITSidebar(
                 .padding(horizontal = 20.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // Top Scrollable Section: Header + Navigation Items + Radar Banner
+            // Top Scrollable Section: Header + Navigation Items
             Column(
                 modifier = Modifier
                     .weight(1f, fill = false)
@@ -169,9 +170,12 @@ fun FoundITSidebar(
                     modifier = Modifier.padding(start = 4.dp, bottom = 10.dp)
                 )
 
-                // Navigation Items: Filtered securely by role
+                // Navigation Items: Title only, no subtitles, ordered with Admin above MyAccount, and Login/Register for guests
                 Screen.getSidebarItemsForRole(userProfile?.role).forEach { screen ->
                     val isSelected = currentScreen.route == screen.route
+                    val isAccountItem = screen == Screen.MyAccount
+                    val itemTitle = if (isAccountItem && userProfile == null) "Login / Register" else screen.title
+                    val itemIcon = if (isAccountItem && userProfile == null) FoundITIcons.Account else screen.icon
 
                     val backgroundColor by animateColorAsState(
                         targetValue = if (isSelected) AppSurfaceSubtle else Color.Transparent,
@@ -184,13 +188,13 @@ fun FoundITSidebar(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 4.dp)
-                            .clip(RoundedCornerShape(16.dp))
+                            .clip(RoundedCornerShape(14.dp))
                             .background(backgroundColor)
-                            .border(1.dp, borderColor, RoundedCornerShape(16.dp))
+                            .border(1.dp, borderColor, RoundedCornerShape(14.dp))
                             .clickable {
                                 onNavigate(screen)
                             }
-                            .padding(horizontal = 14.dp, vertical = 14.dp)
+                            .padding(horizontal = 14.dp, vertical = 12.dp)
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -199,7 +203,7 @@ fun FoundITSidebar(
                             // Icon Box
                             Box(
                                 modifier = Modifier
-                                    .size(38.dp)
+                                    .size(36.dp)
                                     .clip(RoundedCornerShape(10.dp))
                                     .background(
                                         if (isSelected) BrandTealBase else AppSurfaceSubtle
@@ -212,29 +216,22 @@ fun FoundITSidebar(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
-                                    imageVector = screen.icon,
-                                    contentDescription = screen.title,
+                                    imageVector = itemIcon,
+                                    contentDescription = itemTitle,
                                     tint = if (isSelected) BrandMintBase else TextSecondarySlate,
-                                    modifier = Modifier.size(20.dp)
+                                    modifier = Modifier.size(18.dp)
                                 )
                             }
 
                             Spacer(modifier = Modifier.width(14.dp))
 
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = screen.title,
-                                    fontSize = 15.sp,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                    color = if (isSelected) BrandTealBase else TextPrimaryDark
-                                )
-                                Text(
-                                    text = screen.subtitle,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Normal,
-                                    color = if (isSelected) TextSecondarySlate else TextMutedSlate
-                                )
-                            }
+                            Text(
+                                text = itemTitle,
+                                fontSize = 15.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                color = if (isSelected) BrandTealBase else TextPrimaryDark,
+                                modifier = Modifier.weight(1f)
+                            )
 
                             if (isSelected) {
                                 // Active indicator badge in Mint
@@ -246,45 +243,6 @@ fun FoundITSidebar(
                                 )
                             }
                         }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                // Network quick stats card in clean white + subtle border
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(18.dp))
-                        .background(AppSurfaceSubtle)
-                        .border(1.dp, AppBorderLight, RoundedCornerShape(18.dp))
-                        .padding(16.dp)
-                ) {
-                    Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = FoundITIcons.Shield,
-                                contentDescription = "Active Guard",
-                                tint = BrandTealBase,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "COMMUNITY RADAR",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = BrandTealBase,
-                                letterSpacing = 1.sp
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            text = "Over 1,420 items matched this month with 98% return rate.",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Normal,
-                            color = TextSecondarySlate,
-                            lineHeight = 16.sp
-                        )
                     }
                 }
             }
@@ -302,82 +260,127 @@ fun FoundITSidebar(
                         .background(AppBorderLight)
                 )
                 Spacer(modifier = Modifier.height(14.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
+
+                if (userProfile != null) {
                     Row(
-                        modifier = Modifier.weight(1f, fill = false),
-                        verticalAlignment = Alignment.CenterVertically
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Box(
+                        // User Avatar & Name / Email -> Clicking navigates to My Account
+                        Row(
                             modifier = Modifier
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .background(BrandTealBase)
-                                .border(1.5.dp, BrandMintBase, CircleShape),
-                            contentAlignment = Alignment.Center
+                                .weight(1f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable { onNavigate(Screen.MyAccount) }
+                                .padding(vertical = 4.dp, horizontal = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            if (!userProfile?.photoUrl.isNullOrBlank()) {
-                                SubcomposeAsyncImage(
-                                    model = userProfile?.photoUrl,
-                                    contentDescription = "User Avatar",
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier
-                                        .size(36.dp)
-                                        .clip(CircleShape),
-                                    error = {
-                                        Text(
-                                            text = userProfile?.name?.take(2)?.uppercase()?.ifBlank { "FI" } ?: "FI",
-                                            fontSize = 13.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = ColorPureWhite
-                                        )
-                                    }
-                                )
-                            } else {
+                            Box(
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .clip(CircleShape)
+                                    .background(BrandTealBase)
+                                    .border(1.5.dp, BrandMintBase, CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (!userProfile.photoUrl.isNullOrBlank()) {
+                                    SubcomposeAsyncImage(
+                                        model = userProfile.photoUrl,
+                                        contentDescription = "User Avatar",
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier
+                                            .size(38.dp)
+                                            .clip(CircleShape),
+                                        error = {
+                                            Text(
+                                                text = userProfile.name.take(2).uppercase().ifBlank { "FI" },
+                                                fontSize = 13.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = ColorPureWhite
+                                            )
+                                        }
+                                    )
+                                } else {
+                                    Text(
+                                        text = userProfile.name.take(2).uppercase().ifBlank { "FI" },
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = ColorPureWhite
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = userProfile?.name?.take(2)?.uppercase()?.ifBlank { "FI" } ?: "FI",
+                                    text = userProfile.name.ifBlank { "FoundIT User" },
                                     fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = ColorPureWhite
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = TextPrimaryDark,
+                                    maxLines = 1
+                                )
+                                Text(
+                                    text = userProfile.email.ifBlank { "Verified Member" },
+                                    fontSize = 11.sp,
+                                    color = TextMutedSlate,
+                                    maxLines = 1
                                 )
                             }
                         }
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Column(modifier = Modifier.weight(1f, fill = false)) {
-                            Text(
-                                text = userProfile?.name?.ifBlank { "FoundIT User" } ?: "FoundIT App",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = TextPrimaryDark,
-                                maxLines = 1
-                            )
-                            Text(
-                                text = userProfile?.email?.ifBlank { "Network Edition v1.0" } ?: "Network Edition v1.0",
-                                fontSize = 11.sp,
-                                color = TextMutedSlate,
-                                maxLines = 1
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        // Sign out icon button
+                        Box(
+                            modifier = Modifier
+                                .size(38.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(AppSurfaceSubtle)
+                                .border(1.dp, AppBorderLight, RoundedCornerShape(10.dp))
+                                .clickable { onSignOut() },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = FoundITIcons.SignOut,
+                                contentDescription = "Sign Out",
+                                tint = TextSecondarySlate,
+                                modifier = Modifier.size(18.dp)
                             )
                         }
                     }
-
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    // Status / Role pill in Mint
-                    Box(
+                } else {
+                    // Guest user prompt: clicking navigates to Account
+                    Row(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
                             .background(BrandMintBg)
-                            .border(1.dp, BrandMintBase, RoundedCornerShape(8.dp))
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                            .border(1.dp, BrandMintBase, RoundedCornerShape(12.dp))
+                            .clickable { onNavigate(Screen.MyAccount) }
+                            .padding(horizontal = 14.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text(
-                            text = userProfile?.role?.ifBlank { "USER" } ?: "LIVE",
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = BrandTealBase
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = FoundITIcons.Account,
+                                contentDescription = null,
+                                tint = BrandTealBase,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(
+                                text = "Sign In / Register",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = BrandTealBase
+                            )
+                        }
+                        Icon(
+                            imageVector = FoundITIcons.ChevronRight,
+                            contentDescription = null,
+                            tint = BrandTealBase,
+                            modifier = Modifier.size(16.dp)
                         )
                     }
                 }
@@ -385,3 +388,4 @@ fun FoundITSidebar(
         }
     }
 }
+

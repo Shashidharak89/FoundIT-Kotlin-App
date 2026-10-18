@@ -22,6 +22,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -49,6 +50,7 @@ fun FoundITApp(
     authViewModel: AuthViewModel = viewModel(),
     postViewModel: PostViewModel = viewModel()
 ) {
+    val context = LocalContext.current
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     var currentScreen by remember { mutableStateOf<Screen>(Screen.Home) }
@@ -97,6 +99,15 @@ fun FoundITApp(
                         onCloseClick = {
                             scope.launch {
                                 drawerState.close()
+                            }
+                        },
+                        onSignOut = {
+                            scope.launch {
+                                drawerState.close()
+                            }
+                            authViewModel.signOut(context)
+                            if (currentScreen is Screen.AdminPanel) {
+                                currentScreen = Screen.Home
                             }
                         }
                     )

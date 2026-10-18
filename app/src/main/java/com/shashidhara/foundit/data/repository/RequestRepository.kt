@@ -108,8 +108,8 @@ class RequestRepository(
             .whereEqualTo("postOwnerUid", ownerUid)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
-                    Log.e(TAG, "Error listening to received requests: ${error.message}", error)
-                    close(error)
+                    Log.w(TAG, "Snapshot listener error for received requests: ${error.message}")
+                    close()
                     return@addSnapshotListener
                 }
 
@@ -137,8 +137,8 @@ class RequestRepository(
             .whereEqualTo("requesterUid", requesterUid)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
-                    Log.e(TAG, "Error listening to sent requests: ${error.message}", error)
-                    close(error)
+                    Log.w(TAG, "Snapshot listener error for sent requests: ${error.message}")
+                    close()
                     return@addSnapshotListener
                 }
 
@@ -166,8 +166,8 @@ class RequestRepository(
             .whereEqualTo("postId", postId)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
-                    Log.e(TAG, "Error listening to post requests: ${error.message}", error)
-                    close(error)
+                    Log.w(TAG, "Snapshot listener error for post requests: ${error.message}")
+                    close()
                     return@addSnapshotListener
                 }
 
