@@ -330,20 +330,20 @@ fun FoundITSidebar(
 
                         Spacer(modifier = Modifier.width(8.dp))
 
-                        // Sign out icon button
+                        // Sign out icon button in red
                         Box(
                             modifier = Modifier
                                 .size(38.dp)
                                 .clip(RoundedCornerShape(10.dp))
-                                .background(AppSurfaceSubtle)
-                                .border(1.dp, AppBorderLight, RoundedCornerShape(10.dp))
+                                .background(Color(0xFFFEF2F2))
+                                .border(1.dp, Color(0xFFFCA5A5), RoundedCornerShape(10.dp))
                                 .clickable { onSignOut() },
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = FoundITIcons.SignOut,
                                 contentDescription = "Sign Out",
-                                tint = TextSecondarySlate,
+                                tint = Color(0xFFDC2626),
                                 modifier = Modifier.size(18.dp)
                             )
                         }

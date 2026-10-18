@@ -382,55 +382,29 @@ fun AccountScreen(
                 }
             } else {
                 Button(
-                    onClick = { },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = BrandTealBase,
-                        contentColor = ColorPureWhite
-                    )
-                ) {
-                    Icon(
-                        imageVector = FoundITIcons.Edit,
-                        contentDescription = null,
-                        tint = ColorPureWhite,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Edit Account Profile",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                Button(
                     onClick = { authViewModel.signOut(context) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp)
-                        .border(1.dp, AppBorderLight, RoundedCornerShape(14.dp)),
+                        .border(1.dp, Color(0xFFFCA5A5), RoundedCornerShape(14.dp)),
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = AppSurfaceSubtle,
-                        contentColor = BrandTealBase
+                        containerColor = Color(0xFFFEF2F2),
+                        contentColor = Color(0xFFDC2626)
                     )
                 ) {
                     Icon(
                         imageVector = FoundITIcons.SignOut,
                         contentDescription = null,
-                        tint = BrandTealBase,
+                        tint = Color(0xFFDC2626),
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = "Sign Out from FoundIT",
                         fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFDC2626)
                     )
                 }
             }
