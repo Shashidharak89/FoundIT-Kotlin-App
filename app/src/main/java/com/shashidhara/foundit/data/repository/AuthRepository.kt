@@ -165,35 +165,19 @@ class AuthRepository(
         return try {
             val credentialManager = CredentialManager.create(activityContext)
 
-            val response = try {
-                // Step 1: Attempt sign-in with already-authorized accounts (instant sign-in)
-                Log.d(TAG, "Attempting sign-in with setFilterByAuthorizedAccounts(true)")
-                val authorizedOption = GetGoogleIdOption.Builder()
-                    .setFilterByAuthorizedAccounts(true)
-                    .setServerClientId(serverClientId)
-                    .setAutoSelectEnabled(false)
-                    .build()
+            // Always show the Google account selector bottom sheet listing all Google accounts on the device
+            Log.d(TAG, "Requesting Google credentials with account selector (setFilterByAuthorizedAccounts = false)")
+            val googleIdOption = GetGoogleIdOption.Builder()
+                .setFilterByAuthorizedAccounts(false)
+                .setServerClientId(serverClientId)
+                .setAutoSelectEnabled(false)
+                .build()
 
-                val authorizedRequest = GetCredentialRequest.Builder()
-                    .addCredentialOption(authorizedOption)
-                    .build()
+            val credentialRequest = GetCredentialRequest.Builder()
+                .addCredentialOption(googleIdOption)
+                .build()
 
-                credentialManager.getCredential(request = authorizedRequest, context = activityContext)
-            } catch (e: NoCredentialException) {
-                // Step 2: Fallback to all eligible Google accounts present on the device
-                Log.d(TAG, "No pre-authorized account found. Falling back to setFilterByAuthorizedAccounts(false)", e)
-                val allAccountsOption = GetGoogleIdOption.Builder()
-                    .setFilterByAuthorizedAccounts(false)
-                    .setServerClientId(serverClientId)
-                    .setAutoSelectEnabled(false)
-                    .build()
-
-                val allAccountsRequest = GetCredentialRequest.Builder()
-                    .addCredentialOption(allAccountsOption)
-                    .build()
-
-                credentialManager.getCredential(request = allAccountsRequest, context = activityContext)
-            }
+            val response = credentialManager.getCredential(request = credentialRequest, context = activityContext)
 
             val credential = response.credential
             if (credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {

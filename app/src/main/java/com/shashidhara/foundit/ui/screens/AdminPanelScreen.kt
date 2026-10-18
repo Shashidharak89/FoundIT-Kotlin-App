@@ -204,11 +204,12 @@ fun AdminPanelScreen(
                 caseItem = caseItem,
                 isActionInProgress = uiState.isActionInProgress,
                 onDismiss = { adminViewModel.selectCaseForStatusChange(null) },
-                onConfirm = { newStatus, reason ->
+                onConfirm = { newStatus, newTracking, reason ->
                     adminViewModel.updateCaseStatus(
                         postId = caseItem.id,
                         previousStatus = caseItem.status,
                         newStatus = newStatus,
+                        newTrackingStatus = newTracking,
                         reason = reason
                     )
                 }
@@ -1564,24 +1565,40 @@ private fun StatusChangeDialog(
     caseItem: PostItem,
     isActionInProgress: Boolean,
     onDismiss: () -> Unit,
-    onConfirm: (newStatus: String, reason: String) -> Unit
+    onConfirm: (newStatus: String, newTracking: String, reason: String) -> Unit
 ) {
-    val allowedTransitions = remember(caseItem.status) {
-        CaseLifecycle.getAllowedTransitions(caseItem.status)
+    val postStatuses = remember {
+        listOf(
+            "OPEN" to "Active • Open for Requests",
+            "PENDING" to "Claim Pending • Verification Underway",
+            "RESOLVED" to "Resolved • Handed Over / Completed"
+        )
     }
 
-    // Critical Requirement: Autofill with current saved status
-    var selectedStatus by remember(caseItem.status) { mutableStateOf(caseItem.status) }
+    val trackingStatuses = remember {
+        listOf(
+            PostItem.TRACKING_WITH_STRANGER to "With Stranger / Finder",
+            PostItem.TRACKING_WITH_SECURITY to "With Campus Security",
+            PostItem.TRACKING_WITH_OWNER to "Owner Received"
+        )
+    }
+
+    val currentStatusUpper = caseItem.status.uppercase()
+    var selectedStatus by remember(caseItem.status) {
+        mutableStateOf(if (currentStatusUpper in listOf("OPEN", "PENDING", "RESOLVED")) currentStatusUpper else "OPEN")
+    }
+
+    var selectedTracking by remember(caseItem.currentTracking) {
+        mutableStateOf(caseItem.currentTracking)
+    }
+
     var reason by remember { mutableStateOf("") }
     var validationError by remember { mutableStateOf<String?>(null) }
-    var showAllStatuses by remember { mutableStateOf(false) }
-
-    val displayStatuses = if (showAllStatuses) CaseLifecycle.ALL_STATUSES else (listOf(caseItem.status) + allowedTransitions).distinct()
 
     AlertDialog(
         onDismissRequest = { if (!isActionInProgress) onDismiss() },
         title = {
-            Text(text = "Update Case Status", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = TextPrimaryDark)
+            Text(text = "Update Case Status & Tracking", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = TextPrimaryDark)
         },
         text = {
             Column(
@@ -1595,56 +1612,90 @@ private fun StatusChangeDialog(
                     fontWeight = FontWeight.SemiBold,
                     color = TextSecondarySlate
                 )
-                Text(
-                    text = "Current Status: ${CaseLifecycle.getStatusLabel(caseItem.status)}",
-                    fontSize = 11.sp,
-                    color = BrandTealBase,
-                    fontWeight = FontWeight.Medium
-                )
 
                 Spacer(modifier = Modifier.height(12.dp))
 
+                // Section 1: Post Status (3 Options Only)
                 Text(
-                    text = if (showAllStatuses) "Select Any System Status (Admin Override):" else "Permitted Status Options:",
+                    text = "1. Post Status (3 Options):",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     color = TextPrimaryDark
                 )
-
-                displayStatuses.forEach { targetStatus ->
-                    val isCurrent = targetStatus.equals(caseItem.status, ignoreCase = true)
+                Spacer(modifier = Modifier.height(4.dp))
+                postStatuses.forEach { (stKey, stLabel) ->
+                    val isSelected = selectedStatus == stKey
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { selectedStatus = targetStatus }
+                            .clickable { selectedStatus = stKey }
                             .padding(vertical = 4.dp)
                     ) {
                         RadioButton(
-                            selected = selectedStatus == targetStatus,
-                            onClick = { selectedStatus = targetStatus },
+                            selected = isSelected,
+                            onClick = { selectedStatus = stKey },
                             colors = RadioButtonDefaults.colors(selectedColor = BrandTealBase)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = CaseLifecycle.getStatusLabel(targetStatus) + if (isCurrent) " (Current)" else "",
-                            fontSize = 12.sp,
-                            fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
-                            color = if (isCurrent) BrandTealBase else TextPrimaryDark
-                        )
+                        Column {
+                            Text(
+                                text = stKey,
+                                fontSize = 12.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
+                                color = if (isSelected) BrandTealBase else TextPrimaryDark
+                            )
+                            Text(
+                                text = stLabel,
+                                fontSize = 10.sp,
+                                color = TextSecondarySlate
+                            )
+                        }
                     }
                 }
 
-                if (!showAllStatuses) {
-                    TextButton(
-                        onClick = { showAllStatuses = true },
-                        contentPadding = PaddingValues(0.dp)
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Section 2: Product Tracking Status (3 Options Only)
+                Text(
+                    text = "2. Product Tracking Status (3 Options):",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimaryDark
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                trackingStatuses.forEach { (trKey, trLabel) ->
+                    val isSelected = selectedTracking == trKey
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { selectedTracking = trKey }
+                            .padding(vertical = 4.dp)
                     ) {
-                        Text("Show all statuses (Admin Override)", fontSize = 11.sp, color = BrandTealBase)
+                        RadioButton(
+                            selected = isSelected,
+                            onClick = { selectedTracking = trKey },
+                            colors = RadioButtonDefaults.colors(selectedColor = BrandTealBase)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Column {
+                            Text(
+                                text = trKey,
+                                fontSize = 12.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
+                                color = if (isSelected) BrandTealBase else TextPrimaryDark
+                            )
+                            Text(
+                                text = trLabel,
+                                fontSize = 10.sp,
+                                color = TextSecondarySlate
+                            )
+                        }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
                 OutlinedTextField(
                     value = reason,
@@ -1653,7 +1704,7 @@ private fun StatusChangeDialog(
                         validationError = null
                     },
                     label = { Text("Administrative Justification *", fontSize = 11.sp) },
-                    placeholder = { Text("e.g. Owner verified and item handed over on campus", fontSize = 11.sp) },
+                    placeholder = { Text("e.g. Verified by campus security staff", fontSize = 11.sp) },
                     modifier = Modifier.fillMaxWidth(),
                     isError = validationError != null,
                     supportingText = validationError?.let { { Text(it, color = Color(0xFFDC2626), fontSize = 10.sp) } }
@@ -1663,28 +1714,20 @@ private fun StatusChangeDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    if (selectedStatus.isBlank()) {
-                        validationError = "Please select a target status"
-                        return@Button
-                    }
-                    if (selectedStatus.equals(caseItem.status, ignoreCase = true)) {
-                        validationError = "Please select a different status to update"
-                        return@Button
-                    }
                     if (reason.trim().isBlank()) {
-                        validationError = "Administrative reason is mandatory for status change audit"
+                        validationError = "Administrative reason is mandatory for audit trail"
                         return@Button
                     }
-                    onConfirm(selectedStatus, reason.trim())
+                    onConfirm(selectedStatus, selectedTracking, reason.trim())
                 },
-                enabled = !isActionInProgress && !selectedStatus.equals(caseItem.status, ignoreCase = true),
+                enabled = !isActionInProgress,
                 colors = ButtonDefaults.buttonColors(containerColor = BrandTealBase)
             ) {
                 if (isActionInProgress) {
                     CircularProgressIndicator(modifier = Modifier.size(16.dp), color = BrandMintBase, strokeWidth = 2.dp)
                     Spacer(modifier = Modifier.width(6.dp))
                 }
-                Text("Update Status", color = BrandMintBase)
+                Text("Confirm Status Update", color = ColorPureWhite, fontSize = 12.sp, fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
@@ -1854,7 +1897,7 @@ private fun AdminEditPostDialog(
                     modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    CaseLifecycle.ALL_STATUSES.forEach { st ->
+                    listOf("OPEN", "PENDING", "RESOLVED").forEach { st ->
                         val isSelected = status.equals(st, ignoreCase = true)
                         Box(
                             modifier = Modifier

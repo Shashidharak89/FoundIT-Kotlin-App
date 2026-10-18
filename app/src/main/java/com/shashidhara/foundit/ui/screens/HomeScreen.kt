@@ -759,8 +759,8 @@ fun HomeScreen(
                             currentUser = currentUser,
                             message = message,
                             onSuccess = {
-                                selectedPostForDetails = post.copy(status = "PENDING")
                                 postViewModel.checkUserRequestForPost(post.id, currentUser.uid)
+                                Toast.makeText(context, "Request submitted successfully", Toast.LENGTH_SHORT).show()
                             }
                         )
                     }
@@ -772,7 +772,8 @@ fun HomeScreen(
                             postId = post.id,
                             currentUserUid = currentUser.uid,
                             onSuccess = {
-                                selectedPostForDetails = post.copy(status = "OPEN")
+                                postViewModel.checkUserRequestForPost(post.id, currentUser.uid)
+                                Toast.makeText(context, "Request cancelled", Toast.LENGTH_SHORT).show()
                             }
                         )
                     }
@@ -1428,11 +1429,11 @@ private fun PostDetailsDialog(
                             color = TextSecondarySlate
                         )
 
-                        // If Owner or Admin: Provide buttons to update product tracking
-                        if (isOwner || isAdmin) {
+                        // If Admin: Provide buttons to update product tracking
+                        if (isAdmin) {
                             Spacer(modifier = Modifier.height(10.dp))
                             Text(
-                                text = "Update Product Location:",
+                                text = "Update Product Location (Admin Only):",
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = TextMutedSlate
@@ -1684,8 +1685,8 @@ private fun PostDetailsDialog(
                                 }
                             }
                         }
-                    } else if (isOwner) {
-                        // CASE B: POST OWNER
+                    } else if (isAdmin) {
+                        // CASE B1: ADMIN CONTROLS (Full management of both statuses + edit & delete)
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -1694,104 +1695,106 @@ private fun PostDetailsDialog(
                                 .border(1.dp, AppBorderLight, RoundedCornerShape(14.dp))
                                 .padding(14.dp)
                         ) {
-                            Text(
-                                text = "Post Management (Owner Controls)",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = TextPrimaryDark
-                            )
-
-                            Spacer(modifier = Modifier.height(10.dp))
-
-                            if (post.status.equals("PENDING", ignoreCase = true)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Admin Case & Status Controls",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = TextPrimaryDark
+                                )
                                 Box(
                                     modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(Color(0xFFFEF3C7))
-                                        .border(1.dp, Color(0xFFFDE68A), RoundedCornerShape(8.dp))
-                                        .padding(10.dp)
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(BrandTealBase)
+                                        .padding(horizontal = 6.dp, vertical = 2.dp)
                                 ) {
-                                    Column {
-                                        Text(
-                                            text = "A claim is currently pending on this item.",
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color(0xFF92400E)
-                                        )
-                                        Text(
-                                            text = "You can verify and confirm the handover or reject if incorrect.",
-                                            fontSize = 10.sp,
-                                            color = Color(0xFFB45309)
-                                        )
-                                    }
-                                }
-
-                                Spacer(modifier = Modifier.height(8.dp))
-
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
-                                    Button(
-                                        onClick = {
-                                            onStatusChange("RESOLVED")
-                                            onTrackingChange(PostItem.TRACKING_WITH_OWNER)
-                                        },
-                                        modifier = Modifier.weight(1f),
-                                        shape = RoundedCornerShape(8.dp),
-                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF059669)),
-                                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 6.dp)
-                                    ) {
-                                        Text("Confirm & Resolve", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = ColorPureWhite)
-                                    }
-
-                                    OutlinedButton(
-                                        onClick = { onStatusChange("OPEN") },
-                                        modifier = Modifier.weight(1f),
-                                        shape = RoundedCornerShape(8.dp),
-                                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 6.dp)
-                                    ) {
-                                        Text("Reject (Re-open)", fontSize = 11.sp, color = TextSecondarySlate)
-                                    }
-                                }
-                            } else if (post.status.equals("OPEN", ignoreCase = true)) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
-                                    Button(
-                                        onClick = { onStatusChange("RESOLVED") },
-                                        modifier = Modifier.weight(1f),
-                                        shape = RoundedCornerShape(8.dp),
-                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF059669)),
-                                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 6.dp)
-                                    ) {
-                                        Text("Mark Resolved", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = ColorPureWhite)
-                                    }
-
-                                    OutlinedButton(
-                                        onClick = { onStatusChange("CLOSED") },
-                                        modifier = Modifier.weight(1f),
-                                        shape = RoundedCornerShape(8.dp),
-                                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 6.dp)
-                                    ) {
-                                        Text("Close Post", fontSize = 11.sp, color = TextSecondarySlate)
-                                    }
-                                }
-                            } else {
-                                Button(
-                                    onClick = { onStatusChange("OPEN") },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(8.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = BrandTealBase),
-                                    contentPadding = PaddingValues(horizontal = 6.dp, vertical = 6.dp)
-                                ) {
-                                    Text("Re-open Report to Community", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = BrandMintBase)
+                                    Text("ADMIN ONLY", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = BrandMintBase)
                                 }
                             }
 
                             Spacer(modifier = Modifier.height(10.dp))
+
+                            Text(
+                                text = "1. Post Status (3 Options):",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = TextMutedSlate
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                listOf(
+                                    "OPEN" to "OPEN",
+                                    "PENDING" to "PENDING",
+                                    "RESOLVED" to "RESOLVED"
+                                ).forEach { (label, statusVal) ->
+                                    val isSelected = post.status.equals(statusVal, ignoreCase = true)
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(if (isSelected) BrandTealBase else ColorPureWhite)
+                                            .border(1.dp, if (isSelected) BrandTealBase else AppBorderLight, RoundedCornerShape(8.dp))
+                                            .clickable { onStatusChange(statusVal) }
+                                            .padding(vertical = 8.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = label,
+                                            fontSize = 11.sp,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
+                                            color = if (isSelected) BrandMintBase else TextPrimaryDark
+                                        )
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            Text(
+                                text = "2. Product Tracking Status (3 Options):",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = TextMutedSlate
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                listOf(
+                                    "Stranger" to PostItem.TRACKING_WITH_STRANGER,
+                                    "Security" to PostItem.TRACKING_WITH_SECURITY,
+                                    "Owner Got" to PostItem.TRACKING_WITH_OWNER
+                                ).forEach { (label, trackVal) ->
+                                    val isSelected = post.currentTracking == trackVal
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(if (isSelected) BrandTealBase else ColorPureWhite)
+                                            .border(1.dp, if (isSelected) BrandTealBase else AppBorderLight, RoundedCornerShape(8.dp))
+                                            .clickable { onTrackingChange(trackVal) }
+                                            .padding(vertical = 8.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = label,
+                                            fontSize = 11.sp,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
+                                            color = if (isSelected) BrandMintBase else TextPrimaryDark
+                                        )
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(12.dp))
 
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -1814,6 +1817,56 @@ private fun PostDetailsDialog(
                                     contentPadding = PaddingValues(horizontal = 6.dp, vertical = 6.dp)
                                 ) {
                                     Text("Delete Post", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                                }
+                            }
+                        }
+                    } else if (isOwner) {
+                        // CASE B2: REGULAR POST OWNER (Can ONLY Edit post details and Delete post. Status & tracking updates are left to Admin.)
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(AppSurfaceSubtle)
+                                .border(1.dp, AppBorderLight, RoundedCornerShape(14.dp))
+                                .padding(14.dp)
+                        ) {
+                            Text(
+                                text = "Post Management (Owner Controls)",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = TextPrimaryDark
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "You can edit your post description, location, or delete this post. Status updates and product tracking verification are handled by campus administrators.",
+                                fontSize = 11.sp,
+                                color = TextSecondarySlate,
+                                lineHeight = 15.sp
+                            )
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                OutlinedButton(
+                                    onClick = onEditPost,
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 6.dp, vertical = 8.dp)
+                                ) {
+                                    Text("Edit Post Details", fontSize = 12.sp, color = BrandTealBase, fontWeight = FontWeight.Bold)
+                                }
+
+                                OutlinedButton(
+                                    onClick = onDeletePost,
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFDC2626)),
+                                    contentPadding = PaddingValues(horizontal = 6.dp, vertical = 8.dp)
+                                ) {
+                                    Text("Delete Post", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                                 }
                             }
 

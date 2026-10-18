@@ -54,13 +54,6 @@ class RequestRepository(
             Log.d(TAG, "Submitting request $requestId for post $postId from requester ${requester.uid}")
             firestore.collection(REQUESTS_COLLECTION).document(requestId).set(requestData).await()
 
-            // Synchronize post status to PENDING so that new requests are locked
-            val postUpdates = hashMapOf<String, Any>(
-                "status" to CaseLifecycle.STATUS_PENDING,
-                "updatedAt" to FieldValue.serverTimestamp()
-            )
-            firestore.collection(POSTS_COLLECTION).document(postId).update(postUpdates).await()
-
             val createdRequest = PostRequest(
                 id = requestId,
                 postId = postId,
@@ -237,14 +230,6 @@ class RequestRepository(
                 "updatedAt" to FieldValue.serverTimestamp()
             )
             firestore.collection(REQUESTS_COLLECTION).document(requestId).update(updates).await()
-
-            if (!postId.isNullOrBlank()) {
-                val postUpdates = hashMapOf<String, Any>(
-                    "status" to CaseLifecycle.STATUS_OPEN,
-                    "updatedAt" to FieldValue.serverTimestamp()
-                )
-                firestore.collection(POSTS_COLLECTION).document(postId).update(postUpdates).await()
-            }
 
             Result.success(Unit)
         } catch (e: Exception) {

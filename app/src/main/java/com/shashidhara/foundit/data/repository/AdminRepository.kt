@@ -165,20 +165,19 @@ class AdminRepository(
         postId: String,
         previousStatus: String,
         newStatus: String,
+        newTrackingStatus: String? = null,
         reason: String,
         adminUid: String,
         adminName: String
     ): Result<Unit> {
         return try {
-            require(CaseLifecycle.isValidTransition(previousStatus, newStatus, isAdmin = true)) {
-                "Invalid status transition from $previousStatus to $newStatus"
-            }
-            require(reason.isNotBlank()) { "An administrative reason is required for status changes" }
-
             val postUpdates = hashMapOf<String, Any>(
                 "status" to newStatus,
                 "updatedAt" to FieldValue.serverTimestamp()
             )
+            if (!newTrackingStatus.isNullOrBlank()) {
+                postUpdates["trackingStatus"] = newTrackingStatus
+            }
             firestore.collection(POSTS_COLLECTION).document(postId).update(postUpdates).await()
 
             // Create Audit Log (resilient so audit failure does not fail the primary update)
@@ -190,7 +189,7 @@ class AdminRepository(
                     entityType = AuditLogEntry.ENTITY_POST,
                     entityId = postId,
                     previousStatus = previousStatus,
-                    newStatus = newStatus,
+                    newStatus = if (!newTrackingStatus.isNullOrBlank()) "$newStatus ($newTrackingStatus)" else newStatus,
                     reason = reason.trim()
                 )
                 createAuditLogInternal(logEntry)
@@ -198,7 +197,7 @@ class AdminRepository(
                 Log.w(TAG, "Post status updated to $newStatus, but audit log creation failed: ${auditErr.message}")
             }
 
-            Log.d(TAG, "Admin updated post $postId status: $previousStatus -> $newStatus (reason: $reason)")
+            Log.d(TAG, "Admin updated post $postId status: $previousStatus -> $newStatus (tracking: $newTrackingStatus, reason: $reason)")
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to update case status: ${e.message}", e)

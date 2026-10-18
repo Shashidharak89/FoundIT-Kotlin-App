@@ -239,7 +239,13 @@ class AdminViewModel(
         }
     }
 
-    fun updateCaseStatus(postId: String, previousStatus: String, newStatus: String, reason: String) {
+    fun updateCaseStatus(
+        postId: String,
+        previousStatus: String,
+        newStatus: String,
+        newTrackingStatus: String? = null,
+        reason: String
+    ) {
         val currentUser = auth.currentUser ?: return
         viewModelScope.launch {
             _uiState.update { it.copy(isActionInProgress = true, actionError = null) }
@@ -247,6 +253,7 @@ class AdminViewModel(
                 postId = postId,
                 previousStatus = previousStatus,
                 newStatus = newStatus,
+                newTrackingStatus = newTrackingStatus,
                 reason = reason,
                 adminUid = currentUser.uid,
                 adminName = currentUser.displayName ?: "Admin"
@@ -255,7 +262,8 @@ class AdminViewModel(
                     it.copy(
                         isActionInProgress = false,
                         selectedCaseForStatus = null,
-                        actionMessage = "Status successfully updated to ${CaseLifecycle.getStatusLabel(newStatus)}"
+                        actionMessage = "Status updated to ${CaseLifecycle.getStatusLabel(newStatus)}" +
+                                if (!newTrackingStatus.isNullOrBlank()) " • Custody: $newTrackingStatus" else ""
                     )
                 }
                 loadCases(reset = true)
